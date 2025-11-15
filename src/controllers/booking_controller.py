@@ -313,11 +313,31 @@ def my_bookings():
     # Mark past bookings as completed
     BookingDAL.mark_past_bookings_complete()
     
-    bookings = BookingDAL.get_bookings_by_user(current_user.user_id)
+    # Get all bookings for the current user
+    all_bookings = BookingDAL.get_bookings_by_user(current_user.user_id)
+    
+    # Categorize bookings
+    from datetime import datetime
+    now = datetime.utcnow()
+    
+    upcoming = []
+    pending = []
+    past = []
+    cancelled = []
+    
+    for booking in all_bookings:
+        if booking.status in ['cancelled', 'rejected']:
+            cancelled.append(booking)
+        elif booking.status == 'pending':
+            pending.append(booking)
+        elif booking.status == 'approved' and booking.start_datetime > now:
+            upcoming.append(booking)
+        elif booking.status in ['completed'] or (booking.status == 'approved' and booking.end_datetime <= now):
+            past.append(booking)
     
     # Check which completed bookings need reviews
     needs_review = []
-    for booking in bookings:
+    for booking in past:
         if booking.status == 'completed':
             # Check if user has already reviewed
             has_reviewed = ReviewDAL.has_user_reviewed(current_user.user_id, booking.resource_id, booking.booking_id)
@@ -325,7 +345,10 @@ def my_bookings():
                 needs_review.append(booking.booking_id)
     
     return render_template('bookings/my_bookings.html', 
-                         bookings=bookings,
+                         upcoming=upcoming,
+                         pending=pending,
+                         past=past,
+                         cancelled=cancelled,
                          needs_review=needs_review)
 
 

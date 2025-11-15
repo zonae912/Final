@@ -111,12 +111,13 @@ class MessageDAL:
         Returns:
             list: List of unique thread IDs with last message info
         """
-        # Get all unique threads
+        # Get all unique threads (exclude None thread_ids)
         threads = db.session.query(Message.thread_id).filter(
-            (Message.sender_id == user_id) | (Message.receiver_id == user_id)
+            (Message.sender_id == user_id) | (Message.receiver_id == user_id),
+            Message.thread_id.isnot(None)
         ).distinct().all()
         
-        thread_ids = [t[0] for t in threads]
+        thread_ids = [t[0] for t in threads if t[0] is not None]
         
         # Get last message for each thread
         thread_info = []

@@ -14,17 +14,27 @@
                 </div>
                 <div class="card-body">
                     <!-- Booking Information -->
+                    {% if booking %}
                     <div class="alert alert-info mb-4">
                         <h5 class="alert-heading"><i class="bi bi-info-circle"></i> Your Booking</h5>
                         <p class="mb-1"><strong>Resource:</strong> {{ booking.resource.title }}</p>
-                        <p class="mb-1"><strong>Date:</strong> {{ booking.start_time.strftime('%B %d, %Y') }}</p>
-                        <p class="mb-0"><strong>Time:</strong> {{ booking.start_time.strftime('%I:%M %p') }} - {{ booking.end_time.strftime('%I:%M %p') }}</p>
+                        <p class="mb-1"><strong>Date:</strong> {{ booking.start_datetime.strftime('%B %d, %Y') }}</p>
+                        <p class="mb-0"><strong>Time:</strong> {{ booking.start_datetime.strftime('%I:%M %p') }} - {{ booking.end_datetime.strftime('%I:%M %p') }}</p>
                     </div>
+                    {% else %}
+                    <div class="alert alert-info mb-4">
+                        <h5 class="alert-heading"><i class="bi bi-info-circle"></i> Resource Information</h5>
+                        <p class="mb-1"><strong>Resource:</strong> {{ resource.title }}</p>
+                        <p class="mb-0">You're reviewing: <strong>{{ resource.title }}</strong></p>
+                    </div>
+                    {% endif %}
 
-                    <form method="POST" action="{{ url_for('review.create') }}">
+                    <form method="POST" action="{{ url_for('review.create', resource_id=resource.resource_id) }}">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        {% if booking %}
                         <input type="hidden" name="booking_id" value="{{ booking.booking_id }}">
-                        <input type="hidden" name="resource_id" value="{{ booking.resource.resource_id }}">
+                        {% endif %}
+                        <input type="hidden" name="resource_id" value="{{ resource.resource_id }}">
 
                         <!-- Rating -->
                         <div class="mb-4">
@@ -96,9 +106,15 @@
                                 <button type="submit" class="btn btn-primary">
                                     <i class="bi bi-check-circle"></i> Submit Review
                                 </button>
+                                {% if booking %}
                                 <a href="{{ url_for('booking.detail', booking_id=booking.booking_id) }}" class="btn btn-secondary">
                                     Cancel
                                 </a>
+                                {% else %}
+                                <a href="{{ url_for('resource.detail', resource_id=resource.resource_id) }}" class="btn btn-secondary">
+                                    Cancel
+                                </a>
+                                {% endif %}
                             </div>
                         </div>
                     </form>

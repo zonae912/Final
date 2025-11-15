@@ -53,7 +53,7 @@
             <a href="{{ url_for('calendar.connect') }}" class="btn btn-outline-primary">
                 <i class="bi bi-google"></i> Connect Google Calendar
             </a>
-            <a href="{{ url_for('calendar.export_all') }}" class="btn btn-outline-secondary">
+            <a href="{{ url_for('calendar.export_all_ical') }}" class="btn btn-outline-secondary">
                 <i class="bi bi-download"></i> Export iCal
             </a>
         </div>
@@ -121,7 +121,7 @@
                                             View Details
                                         </a>
                                         {% if booking.status == 'approved' %}
-                                        <a href="{{ url_for('calendar.export', booking_id=booking.booking_id) }}" class="btn btn-sm btn-outline-secondary" title="Download iCal">
+                                        <a href="{{ url_for('calendar.export_ical', booking_id=booking.booking_id) }}" class="btn btn-sm btn-outline-secondary" title="Download iCal">
                                             <i class="bi bi-download"></i>
                                         </a>
                                         {% endif %}

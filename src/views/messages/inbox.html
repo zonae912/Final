@@ -20,7 +20,11 @@
                     <a href="{{ url_for('message.inbox', filter='unread') }}" 
                        class="list-group-item list-group-item-action {{ 'active' if request.args.get('filter') == 'unread' }}">
                         <i class="bi bi-envelope-fill"></i> Unread
-                        <span class="badge bg-danger float-end">{{ threads|sum(attribute='unread_count') }}</span>
+                        {% set total_unread = namespace(count=0) %}
+                        {% for thread in threads %}
+                            {% set total_unread.count = total_unread.count + thread['unread_count'] %}
+                        {% endfor %}
+                        <span class="badge bg-danger float-end">{{ total_unread.count }}</span>
                     </a>
                     <a href="{{ url_for('message.inbox', filter='booking') }}" 
                        class="list-group-item list-group-item-action {{ 'active' if request.args.get('filter') == 'booking' }}">
@@ -60,13 +64,13 @@
                 {% if threads %}
                 <div class="list-group list-group-flush">
                     {% for thread in threads %}
-                    {% set message = thread.last_message %}
-                    <a href="{{ url_for('message.thread', thread_id=thread.thread_id) }}" 
-                       class="list-group-item list-group-item-action {{ 'bg-light' if thread.unread_count > 0 and message.receiver_id == current_user.user_id }}">
+                    {% set message = thread['last_message'] %}
+                    <a href="{{ url_for('message.thread', thread_id=thread['thread_id']) }}" 
+                       class="list-group-item list-group-item-action {{ 'bg-light' if thread['unread_count'] > 0 and message.receiver_id == current_user.user_id }}">
                         <div class="d-flex w-100 justify-content-between align-items-start">
                             <div class="flex-grow-1">
                                 <div class="d-flex align-items-center mb-1">
-                                    {% if thread.unread_count > 0 and message.receiver_id == current_user.user_id %}
+                                    {% if thread['unread_count'] > 0 and message.receiver_id == current_user.user_id %}
                                     <i class="bi bi-circle-fill text-primary me-2" style="font-size: 8px;"></i>
                                     {% else %}
                                     <i class="bi bi-circle text-muted me-2" style="font-size: 8px;"></i>
@@ -80,8 +84,8 @@
                                         {% endif %}
                                     </strong>
 
-                                    {% if thread.unread_count > 0 %}
-                                    <span class="badge bg-danger ms-2">{{ thread.unread_count }}</span>
+                                    {% if thread['unread_count'] > 0 %}
+                                    <span class="badge bg-danger ms-2">{{ thread['unread_count'] }}</span>
                                     {% endif %}
 
                                     {% if message.related_booking_id %}

@@ -30,6 +30,17 @@ def create(resource_id):
         flash('You cannot review this resource. You must have a completed booking.', 'danger')
         return redirect(url_for('resource.detail', resource_id=resource_id))
     
+    # Get booking ID from query parameter
+    booking_id = request.args.get('booking_id', type=int)
+    booking = None
+    
+    if booking_id:
+        booking = BookingDAL.get_booking_by_id(booking_id)
+        # Verify the booking belongs to the current user and is for this resource
+        if not booking or booking.requester_id != current_user.user_id or booking.resource_id != resource_id:
+            flash('Invalid booking specified.', 'danger')
+            return redirect(url_for('resource.detail', resource_id=resource_id))
+    
     if request.method == 'POST':
         rating = request.form.get('rating', type=int)
         comment = bleach.clean(request.form.get('comment', '').strip())
@@ -37,17 +48,17 @@ def create(resource_id):
         # Validation
         if not rating or rating < 1 or rating > 5:
             flash('Please provide a valid rating (1-5).', 'danger')
-            return render_template('reviews/create.html', resource=resource)
+            return render_template('reviews/create.html', resource=resource, booking=booking)
         
-        # Get booking ID if provided
-        booking_id = request.form.get('booking_id', type=int)
+        # Get booking ID from form if provided
+        form_booking_id = request.form.get('booking_id', type=int)
         
         review = ReviewDAL.create_review(
             resource_id=resource_id,
             reviewer_id=current_user.user_id,
             rating=rating,
             comment=comment,
-            booking_id=booking_id
+            booking_id=form_booking_id
         )
         
         if review:
@@ -62,6 +73,7 @@ def create(resource_id):
     
     return render_template('reviews/create.html', 
                          resource=resource,
+                         booking=booking,
                          bookings=resource_bookings)
 
 

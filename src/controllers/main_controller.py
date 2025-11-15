@@ -151,7 +151,7 @@ def calendar_view():
     from datetime import timedelta
     
     # Get user's bookings
-    my_bookings = BookingDAL.get_bookings_by_requester(current_user.user_id)
+    my_bookings = BookingDAL.get_bookings_by_user(current_user.user_id)
     
     # Get bookings for resources owned by user (if staff)
     owned_bookings = []

@@ -460,23 +460,35 @@ def create_sample_bookings(app, users, resources):
         sarah = User.query.filter_by(email='sarah.j@student.campus.edu').first()
         
         study_room = Resource.query.filter_by(title='Quiet Study Room 4A').first()
+        study_room_5b = Resource.query.filter_by(title='Group Study Room 5B').first()
         lab = Resource.query.filter_by(title='Science Lab A').first()
         camera = Resource.query.filter_by(title='Professional Camera Kit').first()
+        cg_1014 = Resource.query.filter_by(title='CG 1014 Lecture Hall').first()
+        cg_1022 = Resource.query.filter_by(title='CG 1022 Lecture Hall').first()
         
         now = datetime.now()
         
         bookings = [
-            # Past booking (completed)
+            # Past bookings (completed)
             Booking(
                 resource=study_room,
                 requester=john,
                 start_datetime=now - timedelta(days=7, hours=2),
                 end_datetime=now - timedelta(days=7),
-                status='approved',
+                status='completed',
                 purpose='Study for final exams',
                 notes='Need quiet environment'
             ),
-            # Upcoming bookings
+            Booking(
+                resource=cg_1014,
+                requester=mike,
+                start_datetime=now - timedelta(hours=3),
+                end_datetime=now - timedelta(hours=2),
+                status='completed',
+                purpose='Group study session',
+                notes='Math homework review'
+            ),
+            # Upcoming bookings for different users
             Booking(
                 resource=study_room,
                 requester=jane,
@@ -487,6 +499,24 @@ def create_sample_bookings(app, users, resources):
                 notes='Working on biology presentation'
             ),
             Booking(
+                resource=study_room_5b,
+                requester=mike,
+                start_datetime=now + timedelta(days=1, hours=14),
+                end_datetime=now + timedelta(days=1, hours=16),
+                status='approved',
+                purpose='Study group for Calculus',
+                notes='Preparing for midterm exam'
+            ),
+            Booking(
+                resource=cg_1022,
+                requester=mike,
+                start_datetime=now + timedelta(days=3, hours=10),
+                end_datetime=now + timedelta(days=3, hours=12),
+                status='approved',
+                purpose='Project presentation practice',
+                notes='Need space for rehearsal'
+            ),
+            Booking(
                 resource=lab,
                 requester=sarah,
                 start_datetime=now + timedelta(days=2, hours=14),
@@ -495,15 +525,33 @@ def create_sample_bookings(app, users, resources):
                 purpose='Chemistry experiment',
                 notes='Testing pH levels'
             ),
-            # Pending booking
+            Booking(
+                resource=study_room,
+                requester=john,
+                start_datetime=now + timedelta(days=4, hours=9),
+                end_datetime=now + timedelta(days=4, hours=11),
+                status='approved',
+                purpose='Solo study session',
+                notes='Final exam prep'
+            ),
+            # Pending bookings
             Booking(
                 resource=camera,
                 requester=mike,
-                start_datetime=now + timedelta(days=3, hours=9),
-                end_datetime=now + timedelta(days=3, hours=17),
+                start_datetime=now + timedelta(days=5, hours=9),
+                end_datetime=now + timedelta(days=5, hours=17),
                 status='pending',
                 purpose='Documentary filming',
                 notes='Need for media project'
+            ),
+            Booking(
+                resource=lab,
+                requester=jane,
+                start_datetime=now + timedelta(days=6, hours=13),
+                end_datetime=now + timedelta(days=6, hours=15),
+                status='pending',
+                purpose='Biology lab work',
+                notes='Microscope observations needed'
             ),
         ]
         

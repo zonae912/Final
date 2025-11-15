@@ -11,8 +11,10 @@ chatbot_bp = Blueprint('chatbot', __name__, url_prefix='/chatbot')
 
 def get_gemini_model():
     """Initialize and return Gemini model"""
-    genai.configure(api_key=current_app.config['GEMINI_API_KEY'])
-    model = genai.GenerativeModel('gemini-pro')
+    # Hardcoded API key
+    genai.configure(api_key='AIzaSyDpGGhCK_qaGWTEAMz2FGym6sjk6WPlDkc')
+    # Using gemini-2.5-flash for faster responses and better performance
+    model = genai.GenerativeModel('gemini-2.5-flash')
     return model
 
 def get_system_context():
@@ -138,6 +140,10 @@ def index():
 @login_required
 def chat():
     """Handle chat messages and return AI responses"""
+    # Skip CSRF validation for this AJAX endpoint
+    from flask import g
+    g.csrf_exempt = True
+    
     try:
         data = request.get_json()
         user_message = data.get('message', '').strip()
@@ -186,6 +192,8 @@ Provide a helpful response based on the system information above."""
         
     except Exception as e:
         current_app.logger.error(f"Chatbot error: {str(e)}")
+        import traceback
+        current_app.logger.error(f"Traceback: {traceback.format_exc()}")
         return jsonify({
             'error': 'Sorry, I encountered an error. Please try again or contact support.',
             'details': str(e)

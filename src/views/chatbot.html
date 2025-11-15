@@ -309,20 +309,24 @@
                 body: JSON.stringify({ message: message })
             });
             
-            const data = await response.json();
-            
             // Remove typing indicator
             removeTypingIndicator();
             
             if (response.ok) {
+                const data = await response.json();
                 addBotMessage(data.response, data.timestamp);
             } else {
-                addBotMessage('Sorry, I encountered an error. Please try again.', new Date());
+                const errorData = await response.json();
+                console.error('Server error:', errorData);
+                addBotMessage(errorData.error || 'Sorry, I encountered an error. Please try again.', new Date());
+                if (errorData.details) {
+                    console.error('Error details:', errorData.details);
+                }
             }
         } catch (error) {
             removeTypingIndicator();
-            addBotMessage('Sorry, I encountered a connection error. Please try again.', new Date());
             console.error('Chat error:', error);
+            addBotMessage('Connection error: ' + error.message + '. Check console for details.', new Date());
         } finally {
             // Re-enable input
             messageInput.disabled = false;

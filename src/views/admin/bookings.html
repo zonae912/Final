@@ -121,6 +121,7 @@
                                         {% if booking.status == 'pending' %}
                                         <form method="POST" action="{{ url_for('admin.approve_booking', booking_id=booking.booking_id) }}" 
                                               class="d-inline">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                             <button type="submit" class="btn btn-sm btn-success" 
                                                     onclick="return confirm('Approve this booking?')" title="Approve">
                                                 <i class="bi bi-check-circle"></i>
@@ -138,6 +139,7 @@
                                             <div class="modal-dialog">
                                                 <div class="modal-content">
                                                     <form method="POST" action="{{ url_for('admin.reject_booking', booking_id=booking.booking_id) }}">
+                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                                         <div class="modal-header">
                                                             <h5 class="modal-title">Reject Booking #{{ booking.booking_id }}</h5>
                                                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
