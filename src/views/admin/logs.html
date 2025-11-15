@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+
+{% block title %}Audit Logs - Admin - Campus Resource Hub{% endblock %}
+
+{% block content %}
+<div class="container-fluid my-4">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-2">
+            <div class="card shadow-sm">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="bi bi-shield-lock"></i> Admin</h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{{ url_for('admin.dashboard') }}" class="list-group-item list-group-item-action">
+                        <i class="bi bi-speedometer2"></i> Dashboard
+                    </a>
+                    <a href="{{ url_for('admin.users') }}" class="list-group-item list-group-item-action">
+                        <i class="bi bi-people"></i> Users
+                    </a>
+                    <a href="{{ url_for('admin.resources') }}" class="list-group-item list-group-item-action">
+                        <i class="bi bi-box"></i> Resources
+                    </a>
+                    <a href="{{ url_for('admin.bookings') }}" class="list-group-item list-group-item-action">
+                        <i class="bi bi-calendar-check"></i> Bookings
+                    </a>
+                    <a href="{{ url_for('admin.reviews') }}" class="list-group-item list-group-item-action">
+                        <i class="bi bi-star"></i> Reviews
+                    </a>
+                    <a href="{{ url_for('admin.logs') }}" class="list-group-item list-group-item-action active">
+                        <i class="bi bi-file-text"></i> Audit Logs
+                    </a>
+                    <a href="{{ url_for('admin.analytics') }}" class="list-group-item list-group-item-action">
+                        <i class="bi bi-graph-up"></i> Analytics
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-10">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2">Audit Logs</h1>
+                <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+
+            <!-- Filter -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <form method="GET" action="{{ url_for('admin.logs') }}" class="row g-3">
+                        <div class="col-md-6">
+                            <label for="action_filter" class="form-label">Filter by Action</label>
+                            <select class="form-select" id="action_filter" name="action">
+                                <option value="">All Actions</option>
+                                <option value="user_created" {% if action_filter == 'user_created' %}selected{% endif %}>User Created</option>
+                                <option value="user_updated" {% if action_filter == 'user_updated' %}selected{% endif %}>User Updated</option>
+                                <option value="user_deleted" {% if action_filter == 'user_deleted' %}selected{% endif %}>User Deleted</option>
+                                <option value="booking_approved" {% if action_filter == 'booking_approved' %}selected{% endif %}>Booking Approved</option>
+                                <option value="booking_rejected" {% if action_filter == 'booking_rejected' %}selected{% endif %}>Booking Rejected</option>
+                                <option value="resource_created" {% if action_filter == 'resource_created' %}selected{% endif %}>Resource Created</option>
+                                <option value="resource_deleted" {% if action_filter == 'resource_deleted' %}selected{% endif %}>Resource Deleted</option>
+                                <option value="review_hidden" {% if action_filter == 'review_hidden' %}selected{% endif %}>Review Hidden</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-filter"></i> Filter
+                            </button>
+                        </div>
+                        {% if action_filter %}
+                        <div class="col-md-3 d-flex align-items-end">
+                            <a href="{{ url_for('admin.logs') }}" class="btn btn-outline-secondary w-100">
+                                <i class="bi bi-x-circle"></i> Clear Filter
+                            </a>
+                        </div>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+
+            <!-- Info Alert -->
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> 
+                Showing the most recent 100 log entries. All admin actions are automatically logged for security and audit purposes.
+            </div>
+
+            <!-- Logs Table -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="bi bi-file-text"></i> Admin Action Logs 
+                        <span class="badge bg-primary">{{ logs|length }}</span>
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if logs %}
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Timestamp</th>
+                                    <th>Admin</th>
+                                    <th>Action</th>
+                                    <th>Details</th>
+                                    <th>IP Address</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for log in logs %}
+                                <tr>
+                                    <td><small>{{ log.log_id }}</small></td>
+                                    <td>
+                                        <strong>{{ log.timestamp.strftime('%Y-%m-%d') if log.timestamp else 'N/A' }}</strong>
+                                        <br><small class="text-muted">{{ log.timestamp.strftime('%H:%M:%S') if log.timestamp else '' }}</small>
+                                    </td>
+                                    <td>
+                                        {% if log.admin %}
+                                        {{ log.admin.name }}
+                                        <br><small class="text-muted">{{ log.admin.email }}</small>
+                                        {% else %}
+                                        <span class="text-muted">System</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if log.action == 'user_created' %}
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-person-plus"></i> User Created
+                                        </span>
+                                        {% elif log.action == 'user_updated' %}
+                                        <span class="badge bg-info">
+                                            <i class="bi bi-person-gear"></i> User Updated
+                                        </span>
+                                        {% elif log.action == 'user_deleted' %}
+                                        <span class="badge bg-danger">
+                                            <i class="bi bi-person-x"></i> User Deleted
+                                        </span>
+                                        {% elif log.action == 'booking_approved' %}
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle"></i> Booking Approved
+                                        </span>
+                                        {% elif log.action == 'booking_rejected' %}
+                                        <span class="badge bg-warning">
+                                            <i class="bi bi-x-circle"></i> Booking Rejected
+                                        </span>
+                                        {% elif log.action == 'resource_created' %}
+                                        <span class="badge bg-primary">
+                                            <i class="bi bi-box-seam"></i> Resource Created
+                                        </span>
+                                        {% elif log.action == 'resource_deleted' %}
+                                        <span class="badge bg-danger">
+                                            <i class="bi bi-trash"></i> Resource Deleted
+                                        </span>
+                                        {% elif log.action == 'review_hidden' %}
+                                        <span class="badge bg-warning">
+                                            <i class="bi bi-eye-slash"></i> Review Hidden
+                                        </span>
+                                        {% elif log.action == 'review_shown' %}
+                                        <span class="badge bg-info">
+                                            <i class="bi bi-eye"></i> Review Shown
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">{{ log.action }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if log.details %}
+                                        <small>{{ log.details }}</small>
+                                        {% else %}
+                                        <span class="text-muted fst-italic">No details</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted font-monospace">
+                                            {{ log.ip_address or 'N/A' }}
+                                        </small>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-file-text" style="font-size: 4rem; color: #ccc;"></i>
+                        <p class="text-muted mt-3">
+                            {% if action_filter %}
+                            No logs found for the selected action.
+                            {% else %}
+                            No audit logs found in the system.
+                            {% endif %}
+                        </p>
+                        {% if action_filter %}
+                        <a href="{{ url_for('admin.logs') }}" class="btn btn-primary">
+                            <i class="bi bi-arrow-clockwise"></i> Clear Filter
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Statistics Summary -->
+            {% if logs %}
+            <div class="row mt-4">
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body text-center">
+                            <h3>{{ logs|selectattr('action', 'in', ['user_created', 'booking_approved', 'resource_created'])|list|length }}</h3>
+                            <p class="mb-0"><i class="bi bi-check-circle"></i> Creation Actions</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body text-center">
+                            <h3>{{ logs|selectattr('action', 'equalto', 'user_updated')|list|length }}</h3>
+                            <p class="mb-0"><i class="bi bi-pencil"></i> Update Actions</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-danger text-white">
+                        <div class="card-body text-center">
+                            <h3>{{ logs|selectattr('action', 'in', ['user_deleted', 'resource_deleted'])|list|length }}</h3>
+                            <p class="mb-0"><i class="bi bi-trash"></i> Deletion Actions</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body text-center">
+                            <h3>{{ logs|selectattr('action', 'in', ['booking_rejected', 'review_hidden'])|list|length }}</h3>
+                            <p class="mb-0"><i class="bi bi-exclamation-triangle"></i> Moderation Actions</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity Timeline -->
+            <div class="card mt-4 shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Activity Timeline</h5>
+                </div>
+                <div class="card-body">
+                    {% if logs[:10] %}
+                    <div class="timeline">
+                        {% for log in logs[:10] %}
+                        <div class="d-flex mb-3 {% if not loop.last %}border-bottom pb-3{% endif %}">
+                            <div class="flex-shrink-0 me-3">
+                                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" 
+                                     style="width: 40px; height: 40px;">
+                                    <i class="bi bi-shield-check"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between">
+                                    <strong>{{ log.admin.name if log.admin else 'System' }}</strong>
+                                    <small class="text-muted">{{ log.timestamp.strftime('%b %d, %Y %H:%M') if log.timestamp else 'N/A' }}</small>
+                                </div>
+                                <div class="text-muted">
+                                    {{ log.action.replace('_', ' ').title() }}: {{ log.details or 'No details available' }}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-center text-muted my-3">No recent activity</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

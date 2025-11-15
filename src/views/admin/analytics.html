@@ -1,0 +1,300 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics - Admin - Campus Resource Hub{% endblock %}
+
+{% block content %}
+<div class="container-fluid my-4">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-2">
+            <div class="card shadow-sm">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="bi bi-shield-lock"></i> Admin</h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{{ url_for('admin.dashboard') }}" class="list-group-item list-group-item-action">
+                        <i class="bi bi-speedometer2"></i> Dashboard
+                    </a>
+                    <a href="{{ url_for('admin.users') }}" class="list-group-item list-group-item-action">
+                        <i class="bi bi-people"></i> Users
+                    </a>
+                    <a href="{{ url_for('admin.resources') }}" class="list-group-item list-group-item-action">
+                        <i class="bi bi-box"></i> Resources
+                    </a>
+                    <a href="{{ url_for('admin.bookings') }}" class="list-group-item list-group-item-action">
+                        <i class="bi bi-calendar-check"></i> Bookings
+                    </a>
+                    <a href="{{ url_for('admin.reviews') }}" class="list-group-item list-group-item-action">
+                        <i class="bi bi-star"></i> Reviews
+                    </a>
+                    <a href="{{ url_for('admin.logs') }}" class="list-group-item list-group-item-action">
+                        <i class="bi bi-file-text"></i> Audit Logs
+                    </a>
+                    <a href="{{ url_for('admin.analytics') }}" class="list-group-item list-group-item-action active">
+                        <i class="bi bi-graph-up"></i> Analytics
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-10">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2">System Analytics</h1>
+                <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+
+            <!-- Time Range Filter -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <form method="GET" action="{{ url_for('admin.analytics') }}" class="row g-3 align-items-end">
+                        <div class="col-md-4">
+                            <label for="days" class="form-label">Time Range</label>
+                            <select class="form-select" id="days" name="days">
+                                <option value="7" {% if days == 7 %}selected{% endif %}>Last 7 Days</option>
+                                <option value="30" {% if days == 30 %}selected{% endif %}>Last 30 Days</option>
+                                <option value="90" {% if days == 90 %}selected{% endif %}>Last 90 Days</option>
+                                <option value="365" {% if days == 365 %}selected{% endif %}>Last Year</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-arrow-clockwise"></i> Update
+                            </button>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <small class="text-muted">
+                                <i class="bi bi-info-circle"></i> Showing data for the last {{ days }} days
+                            </small>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Top Resources by Bookings -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="bi bi-trophy"></i> Top 10 Most Booked Resources
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if top_resources %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Resource</th>
+                                    <th>Type</th>
+                                    <th>Location</th>
+                                    <th>Total Bookings</th>
+                                    <th>Popularity</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for resource, count in top_resources %}
+                                <tr>
+                                    <td>
+                                        {% if loop.index == 1 %}
+                                        <span class="badge bg-warning">🥇 #{{ loop.index }}</span>
+                                        {% elif loop.index == 2 %}
+                                        <span class="badge bg-secondary">🥈 #{{ loop.index }}</span>
+                                        {% elif loop.index == 3 %}
+                                        <span class="badge bg-info">🥉 #{{ loop.index }}</span>
+                                        {% else %}
+                                        <span class="badge bg-light text-dark">#{{ loop.index }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('resource.detail', resource_id=resource.resource_id) }}">
+                                            <strong>{{ resource.name }}</strong>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ resource.resource_type }}</span>
+                                    </td>
+                                    <td>{{ resource.location }}</td>
+                                    <td>
+                                        <strong>{{ count }}</strong> bookings
+                                    </td>
+                                    <td>
+                                        <div class="progress" style="height: 20px;">
+                                            {% set max_bookings = top_resources[0][1] if top_resources else 1 %}
+                                            {% set percentage = (count / max_bookings * 100)|round|int %}
+                                            <div class="progress-bar bg-success" 
+                                                 role="progressbar" 
+                                                 style="width: {{ percentage }}%"
+                                                 aria-valuenow="{{ percentage }}" 
+                                                 aria-valuemin="0" 
+                                                 aria-valuemax="100">
+                                                {{ percentage }}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-graph-down" style="font-size: 3rem; color: #ccc;"></i>
+                        <p class="text-muted mt-2">No booking data available for this time period.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Action Statistics -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="bi bi-bar-chart"></i> Admin Action Statistics
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if action_stats %}
+                    <div class="row">
+                        {% for action, count in action_stats.items() %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-0">{{ action.replace('_', ' ').title() }}</h6>
+                                            <h3 class="mb-0 text-primary">{{ count }}</h3>
+                                        </div>
+                                        <div>
+                                            {% if 'created' in action or 'approved' in action %}
+                                            <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>
+                                            {% elif 'deleted' in action or 'rejected' in action %}
+                                            <i class="bi bi-x-circle text-danger" style="font-size: 2rem;"></i>
+                                            {% elif 'updated' in action %}
+                                            <i class="bi bi-pencil-square text-info" style="font-size: 2rem;"></i>
+                                            {% else %}
+                                            <i class="bi bi-gear text-secondary" style="font-size: 2rem;"></i>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-info-circle" style="font-size: 3rem; color: #ccc;"></i>
+                        <p class="text-muted mt-2">No admin action data available for this time period.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Stats Overview -->
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">
+                                <i class="bi bi-speedometer"></i> System Overview (Last {{ days }} Days)
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-md-3">
+                                    <div class="p-3">
+                                        <i class="bi bi-box text-primary" style="font-size: 2.5rem;"></i>
+                                        <h3 class="mt-2">{{ top_resources|length if top_resources else 0 }}</h3>
+                                        <p class="text-muted mb-0">Active Resources</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="p-3">
+                                        <i class="bi bi-calendar-check text-success" style="font-size: 2.5rem;"></i>
+                                        <h3 class="mt-2">
+                                            {% set total_bookings = top_resources|sum(attribute='1') if top_resources else 0 %}
+                                            {{ total_bookings }}
+                                        </h3>
+                                        <p class="text-muted mb-0">Total Bookings</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="p-3">
+                                        <i class="bi bi-activity text-warning" style="font-size: 2.5rem;"></i>
+                                        <h3 class="mt-2">
+                                            {% set total_actions = action_stats.values()|sum if action_stats else 0 %}
+                                            {{ total_actions }}
+                                        </h3>
+                                        <p class="text-muted mb-0">Admin Actions</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="p-3">
+                                        <i class="bi bi-graph-up-arrow text-info" style="font-size: 2.5rem;"></i>
+                                        <h3 class="mt-2">
+                                            {% if top_resources %}
+                                            {{ (total_bookings / days)|round(1) }}
+                                            {% else %}
+                                            0
+                                            {% endif %}
+                                        </h3>
+                                        <p class="text-muted mb-0">Avg. Bookings/Day</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resource Utilization Insights -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="bi bi-lightbulb"></i> Insights & Recommendations
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info mb-3">
+                        <h6><i class="bi bi-info-circle"></i> Resource Utilization</h6>
+                        {% if top_resources %}
+                        <p class="mb-0">
+                            The most popular resource is <strong>{{ top_resources[0][0].name }}</strong> with 
+                            <strong>{{ top_resources[0][1] }}</strong> bookings in the last {{ days }} days.
+                        </p>
+                        {% else %}
+                        <p class="mb-0">No booking activity recorded in the selected time period.</p>
+                        {% endif %}
+                    </div>
+
+                    {% if action_stats %}
+                    <div class="alert alert-success mb-3">
+                        <h6><i class="bi bi-check-circle"></i> Admin Activity</h6>
+                        <p class="mb-0">
+                            Total admin actions performed: <strong>{{ action_stats.values()|sum }}</strong> in the last {{ days }} days.
+                        </p>
+                    </div>
+                    {% endif %}
+
+                    <div class="alert alert-warning mb-0">
+                        <h6><i class="bi bi-lightbulb"></i> Recommendations</h6>
+                        <ul class="mb-0">
+                            {% if top_resources and top_resources|length >= 3 %}
+                            <li>Consider adding more resources similar to the top 3 most booked items to meet demand.</li>
+                            {% endif %}
+                            {% if action_stats and action_stats.get('booking_approved', 0) > 50 %}
+                            <li>High booking approval rate - system is running smoothly!</li>
+                            {% endif %}
+                            <li>Review audit logs regularly to ensure system security and compliance.</li>
+                            <li>Monitor resource utilization trends to optimize scheduling and capacity planning.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
