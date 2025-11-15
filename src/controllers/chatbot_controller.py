@@ -140,38 +140,84 @@ def index():
 @login_required
 def chat():
     """Handle chat messages and return AI responses"""
-    # Skip CSRF validation for this AJAX endpoint
-    from flask import g
-    g.csrf_exempt = True
-    
     try:
+        # Try to get JSON data
         data = request.get_json()
+        if not data:
+            current_app.logger.error("No JSON data received")
+            return jsonify({'error': 'Invalid request format. Expected JSON data.'}), 400
+            
         user_message = data.get('message', '').strip()
         
         if not user_message:
             return jsonify({'error': 'Message cannot be empty'}), 400
         
+        current_app.logger.info(f"Received message from {current_user.name}: {user_message[:50]}...")
+        
         # Get conversation history from session
         if 'chat_history' not in session:
             session['chat_history'] = []
         
-        # Initialize Gemini model
-        model = get_gemini_model()
-        
-        # Build conversation with system context
-        chat_session = model.start_chat(history=[])
-        
-        # Create prompt with system context and user message
-        full_prompt = f"""{get_system_context()}
+        try:
+            # Initialize Gemini model
+            current_app.logger.info("Initializing Gemini model...")
+            model = get_gemini_model()
+            
+            # Build conversation with system context
+            chat_session = model.start_chat(history=[])
+            
+            # Create prompt with system context and user message
+            full_prompt = f"""{get_system_context()}
 
 Current user: {current_user.name} ({current_user.role})
 User question: {user_message}
 
 Provide a helpful response based on the system information above."""
-        
-        # Generate response
-        response = chat_session.send_message(full_prompt)
-        bot_response = response.text
+            
+            current_app.logger.info("Sending message to Gemini API...")
+            # Generate response with timeout handling
+            try:
+                response = chat_session.send_message(full_prompt)
+                bot_response = response.text
+                current_app.logger.info(f"Received response from Gemini: {len(bot_response)} characters")
+            except Exception as send_error:
+                current_app.logger.error(f"Error sending message to Gemini: {str(send_error)}")
+                raise
+            
+        except Exception as api_error:
+            # Handle API-specific errors
+            current_app.logger.error(f"Gemini API error: {str(api_error)}")
+            current_app.logger.error(f"Error type: {type(api_error).__name__}")
+            import traceback
+            current_app.logger.error(f"API Traceback: {traceback.format_exc()}")
+            
+            # Check for specific error types
+            error_str = str(api_error).lower()
+            if 'api key' in error_str or 'authentication' in error_str or 'unauthorized' in error_str:
+                return jsonify({
+                    'error': 'The chatbot service is temporarily unavailable due to configuration issues.',
+                    'details': 'API authentication failed'
+                }), 503
+            elif 'quota' in error_str or 'limit' in error_str or 'rate' in error_str:
+                return jsonify({
+                    'error': 'The chatbot service has reached its usage limit. Please try again in a few minutes.',
+                    'details': 'API quota exceeded'
+                }), 503
+            elif 'model' in error_str or 'not found' in error_str:
+                return jsonify({
+                    'error': 'The AI model is temporarily unavailable. This might be because "gemini-2.5-flash" is not yet available in your region. Please contact support.',
+                    'details': 'Model not available - try gemini-1.5-flash instead'
+                }), 503
+            elif 'timeout' in error_str:
+                return jsonify({
+                    'error': 'The request took too long. Please try a shorter question.',
+                    'details': 'Request timeout'
+                }), 504
+            else:
+                return jsonify({
+                    'error': f'AI service error: {str(api_error)}',
+                    'details': f'{type(api_error).__name__}: {str(api_error)}'
+                }), 500
         
         # Store in session history (keep last 20 messages)
         session['chat_history'].append({
@@ -190,6 +236,13 @@ Provide a helpful response based on the system information above."""
             'timestamp': datetime.now().isoformat()
         })
         
+    except ValueError as e:
+        # JSON parsing error
+        current_app.logger.error(f"JSON parsing error: {str(e)}")
+        return jsonify({
+            'error': 'Invalid JSON format. Please refresh the page and try again.',
+            'details': str(e)
+        }), 400
     except Exception as e:
         current_app.logger.error(f"Chatbot error: {str(e)}")
         import traceback
@@ -213,3 +266,24 @@ def clear_history():
     session['chat_history'] = []
     session.modified = True
     return jsonify({'message': 'Chat history cleared'})
+
+@chatbot_bp.route('/test', methods=['GET'])
+@login_required
+def test_connection():
+    """Test chatbot API connection"""
+    try:
+        model = get_gemini_model()
+        chat_session = model.start_chat(history=[])
+        response = chat_session.send_message("Hello, this is a test.")
+        return jsonify({
+            'status': 'success',
+            'message': 'Chatbot API is working correctly',
+            'response_preview': response.text[:100]
+        })
+    except Exception as e:
+        import traceback
+        return jsonify({
+            'status': 'error',
+            'message': str(e),
+            'traceback': traceback.format_exc()
+        }), 500

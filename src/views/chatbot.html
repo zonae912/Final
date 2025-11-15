@@ -144,6 +144,14 @@
 </style>
 
 <script>
+    // Helper function to get cookie value
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
+    }
+    
     const chatContainer = document.getElementById('chatContainer');
     const chatForm = document.getElementById('chatForm');
     const messageInput = document.getElementById('messageInput');
@@ -301,32 +309,53 @@
         addTypingIndicator();
         
         try {
+            // Get CSRF token from meta tag or cookie
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || 
+                             getCookie('csrf_token');
+            
+            const headers = {
+                'Content-Type': 'application/json',
+            };
+            
+            // Add CSRF token to headers if available
+            if (csrfToken) {
+                headers['X-CSRFToken'] = csrfToken;
+            }
+            
             const response = await fetch('/chatbot/chat', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: headers,
                 body: JSON.stringify({ message: message })
             });
             
             // Remove typing indicator
             removeTypingIndicator();
             
+            // Check if response is JSON
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                // Server returned HTML instead of JSON (likely an error page)
+                const htmlText = await response.text();
+                console.error('Server returned HTML instead of JSON:', htmlText);
+                addBotMessage('Sorry, the server encountered an error. Please refresh the page and try again. If the problem persists, contact support.', new Date());
+                return;
+            }
+            
+            const data = await response.json();
+            
             if (response.ok) {
-                const data = await response.json();
                 addBotMessage(data.response, data.timestamp);
             } else {
-                const errorData = await response.json();
-                console.error('Server error:', errorData);
-                addBotMessage(errorData.error || 'Sorry, I encountered an error. Please try again.', new Date());
-                if (errorData.details) {
-                    console.error('Error details:', errorData.details);
+                console.error('Server error:', data);
+                addBotMessage(data.error || 'Sorry, I encountered an error. Please try again.', new Date());
+                if (data.details) {
+                    console.error('Error details:', data.details);
                 }
             }
         } catch (error) {
             removeTypingIndicator();
             console.error('Chat error:', error);
-            addBotMessage('Connection error: ' + error.message + '. Check console for details.', new Date());
+            addBotMessage('Connection error: Unable to reach the chatbot service. Please check your internet connection and try again.', new Date());
         } finally {
             // Re-enable input
             messageInput.disabled = false;

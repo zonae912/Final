@@ -70,6 +70,10 @@ def create_app(config_name='default'):
     app.register_blueprint(calendar_bp)
     app.register_blueprint(chatbot_bp)
     
+    # Exempt chatbot AJAX endpoints from CSRF protection
+    # These are still protected by @login_required
+    csrf.exempt(chatbot_bp)
+    
     # Create database tables
     with app.app_context():
         db.create_all()
