@@ -1,0 +1,336 @@
+{% extends "base.html" %}
+
+{% block title %}Booking Details - Campus Resource Hub{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Booking Status Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header {{ 'bg-success' if booking.status == 'approved' else 'bg-warning' if booking.status == 'pending' else 'bg-danger' }} text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-calendar-check"></i> Booking Details
+                        <span class="badge {{ 'bg-light text-success' if booking.status == 'approved' else 'bg-light text-warning' if booking.status == 'pending' else 'bg-light text-danger' }} ms-2">
+                            {{ booking.status.title() }}
+                        </span>
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Resource Information -->
+                    <div class="mb-4">
+                        <h5 class="border-bottom pb-2">Resource Information</h5>
+                        <div class="row">
+                            <div class="col-md-4">
+                                {% set images = booking.resource.get_images() %}
+                                {% if images %}
+                                <img src="{{ url_for('static', filename='uploads/' + images[0]) }}" 
+                                     class="img-fluid rounded" alt="{{ booking.resource.title }}">
+                                {% else %}
+                                <div class="bg-light rounded d-flex align-items-center justify-content-center" 
+                                     style="height: 150px;">
+                                    <i class="bi bi-image text-muted fs-1"></i>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-8">
+                                <h4>
+                                    <a href="{{ url_for('resource.detail', resource_id=booking.resource.resource_id) }}">
+                                        {{ booking.resource.title }}
+                                    </a>
+                                </h4>
+                                <p class="text-muted mb-2">
+                                    <i class="bi bi-tag"></i> {{ booking.resource.category.replace('_', ' ').title() }}
+                                </p>
+                                <p class="mb-1">
+                                    <i class="bi bi-geo-alt"></i> <strong>Location:</strong> {{ booking.resource.location }}
+                                </p>
+                                <p class="mb-1">
+                                    <i class="bi bi-people"></i> <strong>Capacity:</strong> {{ booking.resource.capacity }}
+                                </p>
+                                <p class="mb-0">
+                                    <i class="bi bi-person"></i> <strong>Owner:</strong> {{ booking.resource.owner.name }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Booking Details -->
+                    <div class="mb-4">
+                        <h5 class="border-bottom pb-2">Booking Details</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong><i class="bi bi-calendar"></i> Date:</strong></p>
+                                <p class="ms-4">{{ booking.start_datetime.strftime('%A, %B %d, %Y') }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong><i class="bi bi-clock"></i> Time:</strong></p>
+                                <p class="ms-4">{{ booking.start_datetime.strftime('%I:%M %p') }} - {{ booking.end_datetime.strftime('%I:%M %p') }}</p>
+                                <p class="text-muted small ms-4">
+                                    Duration: {{ ((booking.end_datetime - booking.start_datetime).total_seconds() / 3600)|round(1) }} hours
+                                </p>
+                            </div>
+                        </div>
+
+                        {% if booking.purpose %}
+                        <div class="mt-3">
+                            <p><strong><i class="bi bi-clipboard"></i> Purpose:</strong></p>
+                            <p class="ms-4 text-muted">{{ booking.purpose }}</p>
+                        </div>
+                        {% endif %}
+
+                        {% if booking.notes %}
+                        <div class="mt-3">
+                            <p><strong><i class="bi bi-sticky"></i> Additional Notes:</strong></p>
+                            <p class="ms-4 text-muted">{{ booking.notes }}</p>
+                        </div>
+                        {% endif %}
+
+                        <div class="mt-3">
+                            <p><strong><i class="bi bi-person-circle"></i> Booked By:</strong></p>
+                            <p class="ms-4">{{ booking.requester.name }} ({{ booking.requester.email }})</p>
+                        </div>
+
+                        <div class="mt-3">
+                            <p><strong><i class="bi bi-calendar-plus"></i> Booking Created:</strong></p>
+                            <p class="ms-4 text-muted">{{ booking.created_at.strftime('%B %d, %Y at %I:%M %p') }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Status-specific Information -->
+                    {% if booking.status == 'pending' %}
+                    <div class="alert alert-warning">
+                        <i class="bi bi-hourglass-split"></i> <strong>Awaiting Approval</strong><br>
+                        This booking is pending approval from the resource owner. You will be notified when it's reviewed.
+                    </div>
+                    {% elif booking.status == 'rejected' %}
+                    <div class="alert alert-danger">
+                        <i class="bi bi-x-circle"></i> <strong>Booking Rejected</strong><br>
+                        This booking request was not approved. You can try booking a different time slot.
+                    </div>
+                    {% elif booking.status == 'cancelled' %}
+                    <div class="alert alert-secondary">
+                        <i class="bi bi-x-circle"></i> <strong>Booking Cancelled</strong><br>
+                        This booking has been cancelled.
+                    </div>
+                    {% elif booking.status == 'approved' %}
+                    <div class="alert alert-success">
+                        <i class="bi bi-check-circle"></i> <strong>Booking Confirmed!</strong><br>
+                        Your booking is approved. Don't forget to arrive on time!
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Related Messages -->
+            {% if messages %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-chat-dots"></i> Messages</h5>
+                </div>
+                <div class="card-body">
+                    {% for message in messages %}
+                    <div class="mb-3 pb-3 border-bottom">
+                        <div class="d-flex justify-content-between">
+                            <strong>{{ message.sender.name }}</strong>
+                            <small class="text-muted">{{ message.timestamp.strftime('%b %d, %I:%M %p') }}</small>
+                        </div>
+                        <p class="mb-0 mt-2">{{ message.content }}</p>
+                    </div>
+                    {% endfor %}
+                    <a href="{{ url_for('message.send', booking_id=booking.booking_id) }}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-reply"></i> Send Message
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Actions Sidebar -->
+        <div class="col-md-4">
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <!-- Export to Calendar -->
+                        {% if booking.status == 'approved' %}
+                        <a href="{{ url_for('calendar.export_ical', booking_id=booking.booking_id) }}" 
+                           class="btn btn-outline-primary">
+                            <i class="bi bi-download"></i> Export to iCal
+                        </a>
+
+                        {% if current_user.google_refresh_token %}
+                        <form method="POST" action="{{ url_for('calendar.sync_booking', booking_id=booking.booking_id) }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-outline-success w-100">
+                                <i class="bi bi-calendar-check"></i> Sync to Google Calendar
+                            </button>
+                        </form>
+                        {% endif %}
+
+                        <!-- Write Review (if completed and no review yet) -->
+                        {% if booking.end_datetime < now() and not booking.review %}
+                        <a href="{{ url_for('review.create', resource_id=booking.resource_id) }}" 
+                           class="btn btn-warning">
+                            <i class="bi bi-star"></i> Write Review
+                        </a>
+                        {% endif %}
+                        {% endif %}
+
+                        <!-- Message Owner -->
+                        <a href="{{ url_for('message.send', receiver_id=booking.resource.owner.user_id, booking_id=booking.booking_id) }}" 
+                           class="btn btn-outline-secondary">
+                            <i class="bi bi-chat"></i> Message Owner
+                        </a>
+
+                        <!-- View Resource -->
+                        <a href="{{ url_for('resource.detail', resource_id=booking.resource.resource_id) }}" 
+                           class="btn btn-outline-info">
+                            <i class="bi bi-eye"></i> View Resource
+                        </a>
+
+                        <!-- Cancel Booking -->
+                        {% if booking.status in ['pending', 'approved'] and current_user.user_id == booking.requester_id %}
+                        <hr>
+                        <button type="button" class="btn btn-danger" 
+                                data-bs-toggle="modal" data-bs-target="#cancelModal">
+                            <i class="bi bi-x-circle"></i> Cancel Booking
+                        </button>
+                        {% endif %}
+
+                        <!-- Admin/Owner Actions -->
+                        {% if current_user.role == 'admin' or current_user.user_id == booking.resource.owner.user_id %}
+                        <hr>
+                        <div class="alert alert-info small mb-0">
+                            <strong>Resource Owner Actions</strong>
+                        </div>
+                        
+                        {% if booking.status == 'pending' %}
+                        <form method="POST" action="{{ url_for('booking.approve', booking_id=booking.booking_id) }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="bi bi-check-circle"></i> Approve
+                            </button>
+                        </form>
+                        <button type="button" class="btn btn-danger w-100" 
+                                data-bs-toggle="modal" data-bs-target="#rejectModal">
+                            <i class="bi bi-x-circle"></i> Reject
+                        </button>
+                        {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Booking Timeline -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Timeline</h5>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <i class="bi bi-circle-fill text-primary"></i>
+                            <div>
+                                <strong>Booking Created</strong>
+                                <p class="text-muted small mb-0">
+                                    {{ booking.created_at.strftime('%b %d, %I:%M %p') }}
+                                </p>
+                            </div>
+                        </div>
+                        {% if booking.status in ['approved', 'rejected', 'cancelled'] %}
+                        <div class="timeline-item">
+                            <i class="bi bi-circle-fill {{ 'text-success' if booking.status == 'approved' else 'text-danger' }}"></i>
+                            <div>
+                                <strong>{{ booking.status.title() }}</strong>
+                                <p class="text-muted small mb-0">Status updated</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cancel Modal -->
+<div class="modal fade" id="cancelModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Cancel Booking?</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to cancel this booking?</p>
+                <p class="text-muted">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No, Keep It</button>
+                <form method="POST" action="{{ url_for('booking.cancel', booking_id=booking.booking_id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger">Yes, Cancel Booking</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reject Modal (for owner/admin) -->
+<div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Reject Booking?</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('booking.reject', booking_id=booking.booking_id) }}">
+                <div class="modal-body">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <p>Provide a reason for rejecting this booking:</p>
+                    <textarea class="form-control" name="reason" rows="3" placeholder="Optional reason..."></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Reject Booking</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline-item {
+    position: relative;
+    padding-bottom: 20px;
+}
+
+.timeline-item:last-child {
+    padding-bottom: 0;
+}
+
+.timeline-item i {
+    position: absolute;
+    left: -30px;
+    top: 5px;
+}
+
+.timeline-item:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: -26px;
+    top: 15px;
+    bottom: -20px;
+    width: 2px;
+    background: #dee2e6;
+}
+</style>
+{% endblock %}

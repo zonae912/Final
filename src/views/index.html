@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Campus Resource Hub{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="jumbotron bg-light p-5 rounded-3 mb-4">
+    <h1 class="display-4">Welcome to Campus Resource Hub</h1>
+    <p class="lead">Discover, share, and reserve campus resources with ease. From study rooms to lab equipment, find everything you need in one place.</p>
+    <hr class="my-4">
+    
+    <!-- Search Bar -->
+    <form action="{{ url_for('main.search') }}" method="get" class="row g-3">
+        <div class="col-md-6">
+            <input type="text" class="form-control form-control-lg" name="q" placeholder="Search resources..." aria-label="Search">
+        </div>
+        <div class="col-md-4">
+            <select class="form-select form-select-lg" name="category">
+                <option value="">All Categories</option>
+                {% for cat in categories %}
+                <option value="{{ cat }}">{{ cat.replace('-', ' ').title() }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button class="btn btn-primary btn-lg w-100" type="submit">
+                <i class="bi bi-search"></i> Search
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Featured Resources -->
+<section class="mb-5">
+    <h2 class="mb-4">Featured Resources</h2>
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+        {% for resource in featured_resources %}
+        <div class="col">
+            <div class="card h-100">
+                {% if resource.images %}
+                <img src="{{ url_for('static', filename=(resource.images | from_json | first) or 'images/placeholder.jpg') }}" 
+                     class="card-img-top" alt="{{ resource.title }}" style="height: 200px; object-fit: cover;">
+                {% else %}
+                <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center" style="height: 200px;">
+                    <i class="bi bi-image text-white" style="font-size: 3rem;"></i>
+                </div>
+                {% endif %}
+                <div class="card-body">
+                    <h5 class="card-title">{{ resource.title }}</h5>
+                    <p class="card-text text-truncate">{{ resource.description or 'No description available.' }}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="badge bg-primary">{{ resource.category or 'Uncategorized' }}</span>
+                        <small class="text-muted">
+                            {% if resource.location %}
+                            <i class="bi bi-geo-alt"></i> {{ resource.location }}
+                            {% endif %}
+                        </small>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('resource.detail', resource_id=resource.resource_id) }}" class="btn btn-sm btn-outline-primary w-100">
+                        View Details <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    {% if featured_resources|length == 0 %}
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i> No resources available yet. Be the first to add one!
+    </div>
+    {% endif %}
+    
+    <div class="text-center mt-4">
+        <a href="{{ url_for('resource.list_resources') }}" class="btn btn-primary btn-lg">
+            Browse All Resources <i class="bi bi-arrow-right"></i>
+        </a>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="row g-4 mb-5">
+    <div class="col-md-4">
+        <a href="{{ url_for('resource.list_resources') }}" class="feature-box-link">
+            <div class="card text-center p-4 h-100">
+                <div class="card-body">
+                    <i class="bi bi-calendar-check display-4 text-primary mb-3"></i>
+                    <h3 class="text-dark">Easy Booking</h3>
+                    <p class="text-muted">Reserve resources with just a few clicks. Check availability in real-time and get instant confirmations.</p>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-4">
+        <a href="{{ url_for('message.inbox') }}" class="feature-box-link">
+            <div class="card text-center p-4 h-100">
+                <div class="card-body">
+                    <i class="bi bi-chat-dots display-4 text-primary mb-3"></i>
+                    <h3 class="text-dark">Direct Messaging</h3>
+                    <p class="text-muted">Communicate directly with resource owners to coordinate bookings and ask questions.</p>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-4">
+        <a href="{{ url_for('resource.list_resources') }}" class="feature-box-link">
+            <div class="card text-center p-4 h-100">
+                <div class="card-body">
+                    <i class="bi bi-star-fill display-4 text-primary mb-3"></i>
+                    <h3 class="text-dark">Reviews & Ratings</h3>
+                    <p class="text-muted">Make informed decisions based on community feedback and ratings from other users.</p>
+                </div>
+            </div>
+        </a>
+    </div>
+</section>
+{% endblock %}

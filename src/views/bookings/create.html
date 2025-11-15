@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}Book {{ resource.title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <h2><i class="bi bi-calendar-plus"></i> Book {{ resource.title }}</h2>
+        
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5>Resource Information</h5>
+                <p><strong>Location:</strong> {{ resource.location or 'N/A' }}</p>
+                <p><strong>Capacity:</strong> {{ resource.capacity or 'N/A' }} people</p>
+                {% if resource.requires_approval %}
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i> This resource requires approval from the owner.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Booking Details</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="start_date" class="form-label">Start Date *</label>
+                            <input type="date" class="form-control" id="start_date" name="start_date" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="start_time" class="form-label">Start Time *</label>
+                            <input type="time" class="form-control" id="start_time" name="start_time" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="end_date" class="form-label">End Date *</label>
+                            <input type="date" class="form-control" id="end_date" name="end_date" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="end_time" class="form-label">End Time *</label>
+                            <input type="time" class="form-control" id="end_time" name="end_time" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="purpose" class="form-label">Purpose of Booking</label>
+                        <input type="text" class="form-control" id="purpose" name="purpose" placeholder="e.g., Team Meeting, Study Session">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Additional Notes</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                    </div>
+                    
+                    <!-- Recurrence Option -->
+                    <div class="card mb-3 bg-light">
+                        <div class="card-body">
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="is_recurring" name="is_recurring" onchange="toggleRecurrence()">
+                                <label class="form-check-label" for="is_recurring">
+                                    <strong>Recurring Booking</strong> <span class="text-muted">(Optional)</span>
+                                </label>
+                            </div>
+                            
+                            <div id="recurrence_options" style="display: none;">
+                                <div class="alert alert-info small">
+                                    <i class="bi bi-info-circle"></i> Create multiple bookings with the same time slot.
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="recurrence_pattern" class="form-label">Repeat Pattern</label>
+                                        <select class="form-select" id="recurrence_pattern" name="recurrence_pattern">
+                                            <option value="daily">Daily</option>
+                                            <option value="weekly" selected>Weekly</option>
+                                            <option value="biweekly">Bi-weekly</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label for="recurrence_count" class="form-label">Number of Occurrences</label>
+                                        <input type="number" class="form-control" id="recurrence_count" name="recurrence_count" 
+                                               min="2" max="10" value="4" placeholder="e.g., 4">
+                                        <small class="text-muted">Max 10 occurrences</small>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="recurrence_end_date" class="form-label">End By Date</label>
+                                    <input type="date" class="form-control" id="recurrence_end_date" name="recurrence_end_date">
+                                    <small class="text-muted">All recurring bookings will be created until this date</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-check-circle"></i> Submit Booking Request
+                        </button>
+                        <a href="{{ url_for('resource.detail', resource_id=resource.resource_id) }}" class="btn btn-outline-secondary">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+// Toggle recurrence options
+function toggleRecurrence() {
+    const isRecurring = document.getElementById('is_recurring').checked;
+    const recurrenceOptions = document.getElementById('recurrence_options');
+    recurrenceOptions.style.display = isRecurring ? 'block' : 'none';
+    
+    // Clear recurrence fields if disabled
+    if (!isRecurring) {
+        document.getElementById('recurrence_count').value = 4;
+        document.getElementById('recurrence_end_date').value = '';
+    }
+}
+
+// Set minimum date to today
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('start_date').setAttribute('min', today);
+    document.getElementById('end_date').setAttribute('min', today);
+    
+    // Update end date minimum when start date changes
+    document.getElementById('start_date').addEventListener('change', function() {
+        document.getElementById('end_date').setAttribute('min', this.value);
+        
+        // Update recurrence end date minimum
+        const startDate = new Date(this.value);
+        startDate.setDate(startDate.getDate() + 7); // At least 1 week from start
+        document.getElementById('recurrence_end_date').setAttribute('min', startDate.toISOString().split('T')[0]);
+    });
+    
+    // Real-time conflict detection
+    function checkConflict() {
+        const startDate = document.getElementById('start_date').value;
+        const startTime = document.getElementById('start_time').value;
+        const endDate = document.getElementById('end_date').value;
+        const endTime = document.getElementById('end_time').value;
+        
+        if (startDate && startTime && endDate && endTime) {
+            fetch(`{{ url_for('booking.check_availability', resource_id=resource.resource_id) }}?start=${startDate}T${startTime}&end=${endDate}T${endTime}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.available) {
+                        alert('Warning: This time slot may conflict with existing bookings.');
+                    }
+                });
+        }
+    }
+    
+    // Attach conflict check to date/time inputs
+    ['start_date', 'start_time', 'end_date', 'end_time'].forEach(id => {
+        document.getElementById(id).addEventListener('change', checkConflict);
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}

@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Campus Resource Hub{% endblock %}
+
+{% block content %}
+<div class="container-fluid my-4">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-2">
+            <div class="card shadow-sm">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="bi bi-shield-lock"></i> Admin</h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{{ url_for('admin.dashboard') }}" class="list-group-item list-group-item-action active">
+                        <i class="bi bi-speedometer2"></i> Dashboard
+                    </a>
+                    <a href="{{ url_for('admin.users') }}" class="list-group-item list-group-item-action">
+                        <i class="bi bi-people"></i> Users
+                    </a>
+                    <a href="{{ url_for('admin.resources') }}" class="list-group-item list-group-item-action">
+                        <i class="bi bi-box"></i> Resources
+                    </a>
+                    <a href="{{ url_for('admin.bookings') }}" class="list-group-item list-group-item-action">
+                        <i class="bi bi-calendar-check"></i> Bookings
+                    </a>
+                    <a href="{{ url_for('admin.reviews') }}" class="list-group-item list-group-item-action">
+                        <i class="bi bi-star"></i> Reviews
+                    </a>
+                    <a href="{{ url_for('admin.logs') }}" class="list-group-item list-group-item-action">
+                        <i class="bi bi-file-text"></i> Audit Logs
+                    </a>
+                    <a href="{{ url_for('admin.analytics') }}" class="list-group-item list-group-item-action">
+                        <i class="bi bi-graph-up"></i> Analytics
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-10">
+            <h1 class="h2 mb-4">Admin Dashboard</h1>
+
+            <!-- Statistics Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white shadow">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="card-subtitle mb-2">Total Users</h6>
+                                    <h2 class="card-title mb-0">{{ stats.total_users }}</h2>
+                                </div>
+                                <i class="bi bi-people" style="font-size: 3rem; opacity: 0.5;"></i>
+                            </div>
+                            <small>+{{ stats.new_users_today }} new today</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="card bg-success text-white shadow">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="card-subtitle mb-2">Active Resources</h6>
+                                    <h2 class="card-title mb-0">{{ stats.active_resources }}</h2>
+                                </div>
+                                <i class="bi bi-box" style="font-size: 3rem; opacity: 0.5;"></i>
+                            </div>
+                            <small>{{ stats.total_resources }} total</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="card bg-warning text-dark shadow">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="card-subtitle mb-2">Pending Approvals</h6>
+                                    <h2 class="card-title mb-0">{{ stats.pending_bookings }}</h2>
+                                </div>
+                                <i class="bi bi-hourglass-split" style="font-size: 3rem; opacity: 0.5;"></i>
+                            </div>
+                            <small>Requires attention</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="card bg-info text-white shadow">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="card-subtitle mb-2">Today's Bookings</h6>
+                                    <h2 class="card-title mb-0">{{ stats.todays_bookings }}</h2>
+                                </div>
+                                <i class="bi bi-calendar-check" style="font-size: 3rem; opacity: 0.5;"></i>
+                            </div>
+                            <small>{{ stats.upcoming_bookings }} upcoming</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pending Approvals -->
+            {% if pending_bookings %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-warning">
+                    <h5 class="mb-0">
+                        <i class="bi bi-exclamation-triangle"></i> Pending Approvals ({{ pending_bookings|length }})
+                    </h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    {% for booking in pending_bookings[:5] %}
+                    <div class="list-group-item">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <h6 class="mb-1">{{ booking.resource.title }}</h6>
+                                <p class="text-muted small mb-1">
+                                    Requested by: <strong>{{ booking.requester.name }}</strong>
+                                </p>
+                                <p class="text-muted small mb-0">
+                                    <i class="bi bi-calendar"></i> {{ booking.start_datetime.strftime('%b %d, %Y at %I:%M %p') }}
+                                </p>
+                            </div>
+                            <div class="col-md-3">
+                                <span class="badge bg-secondary">{{ booking.created_at|timeago }}</span>
+                            </div>
+                            <div class="col-md-3 text-end">
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('booking.detail', booking_id=booking.booking_id) }}" 
+                                       class="btn btn-outline-primary">
+                                        <i class="bi bi-eye"></i> View
+                                    </a>
+                                    <form method="POST" action="{{ url_for('booking.approve', booking_id=booking.booking_id) }}" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-success">
+                                            <i class="bi bi-check"></i> Approve
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% if pending_bookings|length > 5 %}
+                <div class="card-footer">
+                    <a href="{{ url_for('admin.bookings', status='pending') }}" class="btn btn-sm btn-outline-primary">
+                        View All {{ pending_bookings|length }} Pending Bookings
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Recent Activity -->
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-activity"></i> Recent Activity</h5>
+                        </div>
+                        <div class="list-group list-group-flush" style="max-height: 400px; overflow-y: auto;">
+                            {% if recent_logs %}
+                            {% for log in recent_logs %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <i class="bi {{ 'bi-plus-circle text-success' if log.action == 'create' else 'bi-pencil text-primary' if log.action == 'update' else 'bi-trash text-danger' if log.action == 'delete' else 'bi-check-circle text-success' }}"></i>
+                                        <strong>{{ log.admin.name }}</strong> 
+                                        {{ log.action }} 
+                                        {{ log.target_table }} 
+                                        <span class="text-muted">#{{ log.target_id }}</span>
+                                    </div>
+                                    <small class="text-muted">{{ log.timestamp|timeago }}</small>
+                                </div>
+                                {% if log.details %}
+                                <p class="small text-muted mb-0 ms-4">{{ log.details }}</p>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                            {% else %}
+                            <div class="list-group-item text-center text-muted py-4">
+                                No recent activity
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="card-footer">
+                            <a href="{{ url_for('admin.logs') }}" class="btn btn-sm btn-outline-primary">
+                                View All Logs
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions & Analytics Preview -->
+                <div class="col-md-4">
+                    <!-- Quick Actions -->
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-lightning"></i> Quick Actions</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-grid gap-2">
+                                <a href="{{ url_for('resource.create') }}" class="btn btn-primary btn-sm">
+                                    <i class="bi bi-plus-circle"></i> Create Resource
+                                </a>
+                                <a href="{{ url_for('admin.users') }}" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-person-plus"></i> Manage Users
+                                </a>
+                                <a href="{{ url_for('message.compose') }}" class="btn btn-outline-secondary btn-sm">
+                                    <i class="bi bi-envelope"></i> Broadcast Message
+                                </a>
+                                <a href="{{ url_for('admin.analytics') }}" class="btn btn-outline-info btn-sm">
+                                    <i class="bi bi-graph-up"></i> View Reports
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- System Health -->
+                    <div class="card shadow-sm">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-heart-pulse"></i> System Health</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="small">Resource Utilization</span>
+                                    <span class="small fw-bold">{{ stats.resource_utilization }}%</span>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar bg-success" style="width: {{ stats.resource_utilization }}%"></div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="small">User Engagement</span>
+                                    <span class="small fw-bold">{{ stats.user_engagement }}%</span>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar bg-info" style="width: {{ stats.user_engagement }}%"></div>
+                                </div>
+                            </div>
+
+                            <div class="mb-0">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="small">Booking Success Rate</span>
+                                    <span class="small fw-bold">{{ stats.booking_success_rate }}%</span>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar bg-primary" style="width: {{ stats.booking_success_rate }}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

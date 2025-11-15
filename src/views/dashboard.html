@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<h2><i class="bi bi-speedometer2"></i> Dashboard</h2>
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-calendar-check"></i> Upcoming Bookings</h5>
+            </div>
+            <div class="list-group list-group-flush">
+                {% for booking in upcoming_bookings %}
+                <a href="{{ url_for('booking.detail', booking_id=booking.booking_id) }}" class="list-group-item list-group-item-action">
+                    <div class="d-flex justify-content-between">
+                        <strong>{{ booking.resource.title }}</strong>
+                        <span class="badge bg-success">{{ booking.status | title }}</span>
+                    </div>
+                    <small class="text-muted">{{ booking.start_datetime | datetime_format }}</small>
+                </a>
+                {% else %}
+                <div class="list-group-item">No upcoming bookings</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-box"></i> My Resources</h5>
+            </div>
+            <div class="list-group list-group-flush">
+                {% for resource in my_resources[:5] %}
+                <a href="{{ url_for('resource.detail', resource_id=resource.resource_id) }}" class="list-group-item list-group-item-action">
+                    {{ resource.title }}
+                    <span class="badge bg-secondary">{{ resource.status }}</span>
+                </a>
+                {% else %}
+                <div class="list-group-item">No resources yet</div>
+                {% endfor %}
+            </div>
+            <div class="card-footer">
+                <a href="{{ url_for('resource.create') }}" class="btn btn-sm btn-primary">Add New Resource</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% if pending_approvals %}
+<div class="alert alert-warning">
+    <strong><i class="bi bi-exclamation-triangle"></i> {{ pending_approvals | length }} pending booking approval(s)</strong>
+</div>
+{% endif %}
+{% endblock %}

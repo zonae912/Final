@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Create Resource{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-10 mx-auto">
+        <h2><i class="bi bi-plus-circle"></i> Add New Resource</h2>
+        
+        <div class="card mt-4">
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label for="title" class="form-label">Resource Title *</label>
+                            <input type="text" class="form-control" id="title" name="title" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="category" class="form-label">Category *</label>
+                            <select class="form-select" id="category" name="category" required>
+                                <option value="">Choose...</option>
+                                {% for cat in categories %}
+                                <option value="{{ cat }}">{{ cat.replace('-', ' ').title() }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="4"></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label for="location" class="form-label">Location</label>
+                            <input type="text" class="form-control" id="location" name="location" placeholder="e.g., Building A, Room 101">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="capacity" class="form-label">Capacity</label>
+                            <input type="number" class="form-control" id="capacity" name="capacity" min="1">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="equipment" class="form-label">Equipment (comma-separated)</label>
+                        <input type="text" class="form-control" id="equipment" name="equipment" placeholder="e.g., Projector, Whiteboard, HDMI Cable">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="images" class="form-label">Upload Images</label>
+                        <input type="file" class="form-control" id="images" name="images" multiple accept="image/*">
+                        <small class="text-muted">You can upload multiple images (PNG, JPG, JPEG, GIF)</small>
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="requires_approval" name="requires_approval">
+                        <label class="form-check-label" for="requires_approval">
+                            Require approval for bookings
+                        </label>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Publish Status</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="publish" id="publish_yes" value="yes" checked>
+                            <label class="form-check-label" for="publish_yes">
+                                Publish immediately
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="publish" id="publish_no" value="no">
+                            <label class="form-check-label" for="publish_no">
+                                Save as draft
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-check-circle"></i> Create Resource
+                        </button>
+                        <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

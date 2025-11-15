@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Message Thread - Campus Resource Hub{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <!-- Back to Inbox -->
+            <div class="mb-3">
+                <a href="{{ url_for('message.inbox') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-arrow-left"></i> Back to Inbox
+                </a>
+            </div>
+
+            <!-- Message Thread -->
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-1">Conversation with {{ other_user.name }}</h4>
+                </div>
+
+                <div class="card-body" style="max-height: 600px; overflow-y: auto;">
+                    <!-- Messages -->
+                    {% for message in thread %}
+                    <div class="message-item mb-4 {{ 'message-sent' if message.sender_id == current_user.user_id else 'message-received' }}">
+                        <div class="d-flex {{ 'flex-row-reverse' if message.sender_id == current_user.user_id }}">
+                            <div class="message-avatar {{ 'ms-3' if message.sender_id == current_user.user_id else 'me-3' }}">
+                                <div class="avatar-circle {{ 'bg-primary' if message.sender_id == current_user.user_id else 'bg-secondary' }}">
+                                    {{ message.sender.name[0].upper() }}
+                                </div>
+                            </div>
+                            <div class="message-content flex-grow-1" style="max-width: 70%;">
+                                <div class="message-bubble {{ 'bg-primary text-white' if message.sender_id == current_user.user_id else 'bg-light' }}">
+                                    <div class="message-header mb-2">
+                                        <strong>{{ message.sender.name }}</strong>
+                                        <small class="text-muted {{ 'text-white-50' if message.sender_id == current_user.user_id }} ms-2">
+                                            {{ message.timestamp.strftime('%B %d, %Y at %I:%M %p') }}
+                                        </small>
+                                    </div>
+                                    <div class="message-body">
+                                        {{ message.content }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Reply Form -->
+                <div class="card-footer">
+                    <form method="POST" action="{{ url_for('message.reply', thread_id=thread_id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="mb-3">
+                            <label for="body" class="form-label fw-bold">Reply</label>
+                            <textarea class="form-control" id="body" name="body" rows="4" 
+                                      required placeholder="Type your message here..."></textarea>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-send"></i> Send Reply
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.avatar-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.message-bubble {
+    padding: 15px;
+    border-radius: 15px;
+    word-wrap: break-word;
+}
+
+.message-sent .message-bubble {
+    border-bottom-right-radius: 5px;
+}
+
+.message-received .message-bubble {
+    border-bottom-left-radius: 5px;
+}
+
+.message-body {
+    white-space: pre-wrap;
+}
+</style>
+
+<script>
+// Scroll to bottom of messages on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const messagesContainer = document.querySelector('.card-body');
+    if (messagesContainer) {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block title %}Calendar View - Campus Resource Hub{% endblock %}
+
+{% block extra_css %}
+<style>
+    .calendar-card {
+        border-left: 4px solid;
+        margin-bottom: 10px;
+    }
+    .calendar-card.status-approved {
+        border-left-color: #198754;
+    }
+    .calendar-card.status-pending {
+        border-left-color: #ffc107;
+    }
+    .calendar-card.status-rejected {
+        border-left-color: #dc3545;
+    }
+    .calendar-card.status-cancelled {
+        border-left-color: #6c757d;
+    }
+    .calendar-card.status-completed {
+        border-left-color: #0dcaf0;
+    }
+    .calendar-legend {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .legend-color {
+        width: 20px;
+        height: 20px;
+        border-radius: 3px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="h2"><i class="bi bi-calendar3"></i> Calendar View</h1>
+            <p class="text-muted">View all your bookings and events in one place</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('calendar.connect') }}" class="btn btn-outline-primary">
+                <i class="bi bi-google"></i> Connect Google Calendar
+            </a>
+            <a href="{{ url_for('calendar.export_all') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-download"></i> Export iCal
+            </a>
+        </div>
+    </div>
+
+    <!-- Status Legend -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h6 class="card-title">Status Legend</h6>
+            <div class="calendar-legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #198754;"></div>
+                    <span>Approved</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #ffc107;"></div>
+                    <span>Pending</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #dc3545;"></div>
+                    <span>Rejected</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #6c757d;"></div>
+                    <span>Cancelled</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #0dcaf0;"></div>
+                    <span>Completed</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- My Bookings -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-calendar-check"></i> My Bookings</h5>
+                </div>
+                <div class="card-body" style="max-height: 600px; overflow-y: auto;">
+                    {% if my_bookings %}
+                        {% for booking in my_bookings|sort(attribute='start_datetime') %}
+                        <div class="card calendar-card status-{{ booking.status }}">
+                            <div class="card-body">
+                                <h6 class="card-title">{{ booking.resource.title }}</h6>
+                                <p class="card-text mb-2">
+                                    <i class="bi bi-geo-alt"></i> {{ booking.resource.location }}
+                                </p>
+                                <p class="card-text mb-2">
+                                    <i class="bi bi-clock"></i> 
+                                    {{ booking.start_datetime.strftime('%b %d, %Y at %I:%M %p') }}
+                                    <br>
+                                    <small class="text-muted">
+                                        to {{ booking.end_datetime.strftime('%I:%M %p') }}
+                                    </small>
+                                </p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="badge bg-{{ 'success' if booking.status == 'approved' else 'warning' if booking.status == 'pending' else 'danger' if booking.status == 'rejected' else 'secondary' }}">
+                                        {{ booking.status.upper() }}
+                                    </span>
+                                    <div>
+                                        <a href="{{ url_for('booking.detail', booking_id=booking.booking_id) }}" class="btn btn-sm btn-outline-primary">
+                                            View Details
+                                        </a>
+                                        {% if booking.status == 'approved' %}
+                                        <a href="{{ url_for('calendar.export', booking_id=booking.booking_id) }}" class="btn btn-sm btn-outline-secondary" title="Download iCal">
+                                            <i class="bi bi-download"></i>
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-calendar-x text-muted" style="font-size: 3rem;"></i>
+                            <p class="text-muted mt-3">No bookings yet</p>
+                            <a href="{{ url_for('resource.list_resources') }}" class="btn btn-primary btn-sm">
+                                Browse Resources
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Bookings for My Resources (Staff/Owner) -->
+        {% if current_user.is_staff() %}
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-calendar2-event"></i> Bookings for My Resources</h5>
+                </div>
+                <div class="card-body" style="max-height: 600px; overflow-y: auto;">
+                    {% if owned_bookings %}
+                        {% for booking in owned_bookings|sort(attribute='start_datetime') %}
+                        <div class="card calendar-card status-{{ booking.status }}">
+                            <div class="card-body">
+                                <h6 class="card-title">{{ booking.resource.title }}</h6>
+                                <p class="card-text mb-2">
+                                    <i class="bi bi-person"></i> Requested by: {{ booking.requester.name }}
+                                </p>
+                                <p class="card-text mb-2">
+                                    <i class="bi bi-clock"></i> 
+                                    {{ booking.start_datetime.strftime('%b %d, %Y at %I:%M %p') }}
+                                    <br>
+                                    <small class="text-muted">
+                                        to {{ booking.end_datetime.strftime('%I:%M %p') }}
+                                    </small>
+                                </p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="badge bg-{{ 'success' if booking.status == 'approved' else 'warning' if booking.status == 'pending' else 'danger' if booking.status == 'rejected' else 'secondary' }}">
+                                        {{ booking.status.upper() }}
+                                    </span>
+                                    <a href="{{ url_for('booking.detail', booking_id=booking.booking_id) }}" class="btn btn-sm btn-outline-primary">
+                                        View Details
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-calendar-x text-muted" style="font-size: 3rem;"></i>
+                            <p class="text-muted mt-3">No bookings for your resources yet</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Quick Actions</h5>
+            <div class="btn-group" role="group">
+                <a href="{{ url_for('resource.list_resources') }}" class="btn btn-outline-primary">
+                    <i class="bi bi-search"></i> Browse Resources
+                </a>
+                <a href="{{ url_for('booking.my_bookings') }}" class="btn btn-outline-primary">
+                    <i class="bi bi-list-ul"></i> View All Bookings
+                </a>
+                {% if current_user.is_staff() %}
+                <a href="{{ url_for('resource.create') }}" class="btn btn-outline-success">
+                    <i class="bi bi-plus-circle"></i> Add Resource
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

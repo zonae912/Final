@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Bookings - Admin - Campus Resource Hub{% endblock %}
+
+{% block content %}
+<div class="container-fluid my-4">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-2">
+            <div class="list-group">
+                <a href="{{ url_for('admin.dashboard') }}" class="list-group-item list-group-item-action">
+                    <i class="bi bi-speedometer2"></i> Dashboard
+                </a>
+                <a href="{{ url_for('admin.users') }}" class="list-group-item list-group-item-action">
+                    <i class="bi bi-people"></i> Users
+                </a>
+                <a href="{{ url_for('admin.resources') }}" class="list-group-item list-group-item-action">
+                    <i class="bi bi-box"></i> Resources
+                </a>
+                <a href="{{ url_for('admin.bookings') }}" class="list-group-item list-group-item-action active">
+                    <i class="bi bi-calendar-check"></i> Bookings
+                </a>
+                <a href="{{ url_for('admin.reviews') }}" class="list-group-item list-group-item-action">
+                    <i class="bi bi-star"></i> Reviews
+                </a>
+                <a href="{{ url_for('admin.logs') }}" class="list-group-item list-group-item-action">
+                    <i class="bi bi-clock-history"></i> Audit Logs
+                </a>
+                <a href="{{ url_for('admin.analytics') }}" class="list-group-item list-group-item-action">
+                    <i class="bi bi-graph-up"></i> Analytics
+                </a>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-10">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="bi bi-calendar-check"></i> Manage Bookings</h1>
+            </div>
+
+            <!-- Filter Tabs -->
+            <ul class="nav nav-tabs mb-3">
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if not status_filter }}" href="{{ url_for('admin.bookings') }}">
+                        All Bookings
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if status_filter == 'pending' }}" href="{{ url_for('admin.bookings', status='pending') }}">
+                        <span class="badge bg-warning text-dark">Pending</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if status_filter == 'approved' }}" href="{{ url_for('admin.bookings', status='approved') }}">
+                        <span class="badge bg-success">Approved</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if status_filter == 'rejected' }}" href="{{ url_for('admin.bookings', status='rejected') }}">
+                        <span class="badge bg-danger">Rejected</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if status_filter == 'cancelled' }}" href="{{ url_for('admin.bookings', status='cancelled') }}">
+                        <span class="badge bg-secondary">Cancelled</span>
+                    </a>
+                </li>
+            </ul>
+
+            <!-- Bookings Table -->
+            <div class="card">
+                <div class="card-body">
+                    {% if bookings %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Resource</th>
+                                    <th>Requester</th>
+                                    <th>Start Time</th>
+                                    <th>End Time</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for booking in bookings %}
+                                <tr>
+                                    <td>#{{ booking.booking_id }}</td>
+                                    <td>
+                                        <a href="{{ url_for('resource.detail', resource_id=booking.resource_id) }}">
+                                            {{ booking.resource.title }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        {{ booking.requester.name }}<br>
+                                        <small class="text-muted">{{ booking.requester.email }}</small>
+                                    </td>
+                                    <td>{{ booking.start_datetime.strftime('%Y-%m-%d %I:%M %p') }}</td>
+                                    <td>{{ booking.end_datetime.strftime('%Y-%m-%d %I:%M %p') }}</td>
+                                    <td>
+                                        {% if booking.status == 'pending' %}
+                                        <span class="badge bg-warning text-dark">Pending</span>
+                                        {% elif booking.status == 'approved' %}
+                                        <span class="badge bg-success">Approved</span>
+                                        {% elif booking.status == 'rejected' %}
+                                        <span class="badge bg-danger">Rejected</span>
+                                        {% elif booking.status == 'cancelled' %}
+                                        <span class="badge bg-secondary">Cancelled</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ booking.created_at|timeago }}</td>
+                                    <td>
+                                        <a href="{{ url_for('booking.detail', booking_id=booking.booking_id) }}" 
+                                           class="btn btn-sm btn-outline-primary" title="View Details">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        
+                                        {% if booking.status == 'pending' %}
+                                        <form method="POST" action="{{ url_for('admin.approve_booking', booking_id=booking.booking_id) }}" 
+                                              class="d-inline">
+                                            <button type="submit" class="btn btn-sm btn-success" 
+                                                    onclick="return confirm('Approve this booking?')" title="Approve">
+                                                <i class="bi bi-check-circle"></i>
+                                            </button>
+                                        </form>
+                                        
+                                        <button type="button" class="btn btn-sm btn-danger" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#rejectModal{{ booking.booking_id }}" title="Reject">
+                                            <i class="bi bi-x-circle"></i>
+                                        </button>
+                                        
+                                        <!-- Reject Modal -->
+                                        <div class="modal fade" id="rejectModal{{ booking.booking_id }}" tabindex="-1">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <form method="POST" action="{{ url_for('admin.reject_booking', booking_id=booking.booking_id) }}">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title">Reject Booking #{{ booking.booking_id }}</h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            <div class="mb-3">
+                                                                <label for="reason{{ booking.booking_id }}" class="form-label">Reason for rejection:</label>
+                                                                <textarea class="form-control" id="reason{{ booking.booking_id }}" 
+                                                                          name="reason" rows="3" required></textarea>
+                                                            </div>
+                                                            <p class="text-muted small">
+                                                                <strong>Resource:</strong> {{ booking.resource.title }}<br>
+                                                                <strong>Requester:</strong> {{ booking.requester.name }}<br>
+                                                                <strong>Time:</strong> {{ booking.start_datetime.strftime('%Y-%m-%d %I:%M %p') }}
+                                                            </p>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                            <button type="submit" class="btn btn-danger">Reject Booking</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> No bookings found.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,371 @@
+{% extends "base.html" %}
+
+{% block title %}AI Chatbot - Campus Resource Hub{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <!-- Chatbot Header -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">
+                            <i class="bi bi-robot"></i> Campus Hub Assistant
+                        </h4>
+                        <button id="clearBtn" class="btn btn-sm btn-outline-light">
+                            <i class="bi bi-trash"></i> Clear Chat
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Chat Messages Container -->
+                <div class="card-body" id="chatContainer" style="height: 500px; overflow-y: auto; background-color: #f8f9fa;">
+                    <!-- Welcome Message -->
+                    <div class="bot-message mb-3">
+                        <div class="d-flex align-items-start">
+                            <div class="flex-shrink-0">
+                                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                    <i class="bi bi-robot"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <div class="bg-white rounded p-3 shadow-sm">
+                                    <p class="mb-2"><strong>Campus Hub Assistant</strong></p>
+                                    <p class="mb-0">Hello {{ current_user.name }}! 👋</p>
+                                    <p class="mb-0">I'm here to help you with the Campus Resource Hub. I can answer questions about:</p>
+                                    <ul class="mb-0 mt-2">
+                                        <li>How to book resources</li>
+                                        <li>Available facilities and locations</li>
+                                        <li>Booking policies and approval process</li>
+                                        <li>Account and profile management</li>
+                                        <li>Reviews and ratings</li>
+                                        <li>Any other questions about the system</li>
+                                    </ul>
+                                    <p class="mt-2 mb-0">What would you like to know?</p>
+                                </div>
+                                <small class="text-muted ms-2">Just now</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Chat Input -->
+                <div class="card-footer bg-white">
+                    <form id="chatForm" class="d-flex gap-2">
+                        <input 
+                            type="text" 
+                            id="messageInput" 
+                            class="form-control" 
+                            placeholder="Type your question here..." 
+                            autocomplete="off"
+                            required
+                        >
+                        <button type="submit" id="sendBtn" class="btn btn-primary" style="min-width: 100px;">
+                            <i class="bi bi-send"></i> Send
+                        </button>
+                    </form>
+                    <small class="text-muted mt-2 d-block">
+                        <i class="bi bi-info-circle"></i> Powered by Google Gemini AI
+                    </small>
+                </div>
+            </div>
+            
+            <!-- Quick Suggestions -->
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-lightbulb"></i> Quick Questions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-2">
+                        <button class="btn btn-sm btn-outline-primary suggestion-btn">How do I book a study room?</button>
+                        <button class="btn btn-sm btn-outline-primary suggestion-btn">What resources are available?</button>
+                        <button class="btn btn-sm btn-outline-primary suggestion-btn">How does the approval process work?</button>
+                        <button class="btn btn-sm btn-outline-primary suggestion-btn">Can I book recurring sessions?</button>
+                        <button class="btn btn-sm btn-outline-primary suggestion-btn">How do I cancel a booking?</button>
+                        <button class="btn btn-sm btn-outline-primary suggestion-btn">Where is the CG building?</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    #chatContainer {
+        scroll-behavior: smooth;
+    }
+    
+    .user-message, .bot-message {
+        animation: fadeIn 0.3s ease-in;
+    }
+    
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .typing-indicator {
+        display: inline-block;
+    }
+    
+    .typing-indicator span {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: #999;
+        margin: 0 2px;
+        animation: typing 1.4s infinite;
+    }
+    
+    .typing-indicator span:nth-child(2) {
+        animation-delay: 0.2s;
+    }
+    
+    .typing-indicator span:nth-child(3) {
+        animation-delay: 0.4s;
+    }
+    
+    @keyframes typing {
+        0%, 60%, 100% {
+            transform: translateY(0);
+        }
+        30% {
+            transform: translateY(-10px);
+        }
+    }
+</style>
+
+<script>
+    const chatContainer = document.getElementById('chatContainer');
+    const chatForm = document.getElementById('chatForm');
+    const messageInput = document.getElementById('messageInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const suggestionBtns = document.querySelectorAll('.suggestion-btn');
+    
+    // Scroll to bottom of chat
+    function scrollToBottom() {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+    
+    // Format timestamp
+    function formatTime(timestamp) {
+        const date = new Date(timestamp);
+        return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    }
+    
+    // Add user message to chat
+    function addUserMessage(message) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'user-message mb-3';
+        messageDiv.innerHTML = `
+            <div class="d-flex align-items-start justify-content-end">
+                <div class="flex-grow-1 me-3 text-end">
+                    <div class="bg-primary text-white rounded p-3 shadow-sm d-inline-block" style="max-width: 80%;">
+                        <p class="mb-0">${escapeHtml(message)}</p>
+                    </div>
+                    <small class="text-muted me-2">${formatTime(new Date())}</small>
+                </div>
+                <div class="flex-shrink-0">
+                    <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                        <i class="bi bi-person"></i>
+                    </div>
+                </div>
+            </div>
+        `;
+        chatContainer.appendChild(messageDiv);
+        scrollToBottom();
+    }
+    
+    // Add bot message to chat
+    function addBotMessage(message, timestamp) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'bot-message mb-3';
+        
+        // Convert markdown-style formatting to HTML
+        const formattedMessage = formatMarkdown(message);
+        
+        messageDiv.innerHTML = `
+            <div class="d-flex align-items-start">
+                <div class="flex-shrink-0">
+                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                        <i class="bi bi-robot"></i>
+                    </div>
+                </div>
+                <div class="flex-grow-1 ms-3">
+                    <div class="bg-white rounded p-3 shadow-sm">
+                        ${formattedMessage}
+                    </div>
+                    <small class="text-muted ms-2">${formatTime(timestamp)}</small>
+                </div>
+            </div>
+        `;
+        chatContainer.appendChild(messageDiv);
+        scrollToBottom();
+    }
+    
+    // Add typing indicator
+    function addTypingIndicator() {
+        const typingDiv = document.createElement('div');
+        typingDiv.id = 'typingIndicator';
+        typingDiv.className = 'bot-message mb-3';
+        typingDiv.innerHTML = `
+            <div class="d-flex align-items-start">
+                <div class="flex-shrink-0">
+                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                        <i class="bi bi-robot"></i>
+                    </div>
+                </div>
+                <div class="flex-grow-1 ms-3">
+                    <div class="bg-white rounded p-3 shadow-sm">
+                        <div class="typing-indicator">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        chatContainer.appendChild(typingDiv);
+        scrollToBottom();
+    }
+    
+    // Remove typing indicator
+    function removeTypingIndicator() {
+        const typingIndicator = document.getElementById('typingIndicator');
+        if (typingIndicator) {
+            typingIndicator.remove();
+        }
+    }
+    
+    // Escape HTML to prevent XSS
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    // Basic markdown formatting
+    function formatMarkdown(text) {
+        // Convert **bold** to <strong>
+        text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        
+        // Convert *italic* to <em>
+        text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        
+        // Convert line breaks
+        text = text.replace(/\n\n/g, '</p><p>');
+        text = text.replace(/\n/g, '<br>');
+        
+        // Wrap in paragraph if not already
+        if (!text.startsWith('<p>')) {
+            text = '<p>' + text + '</p>';
+        }
+        
+        // Convert numbered lists
+        text = text.replace(/(\d+\.\s+[^\n]+)/g, '<li>$1</li>');
+        if (text.includes('<li>')) {
+            text = text.replace(/(<li>.*?<\/li>)/gs, '<ol>$1</ol>');
+        }
+        
+        // Convert bullet points
+        text = text.replace(/^[-•]\s+(.+)$/gm, '<li>$1</li>');
+        
+        return text;
+    }
+    
+    // Send message
+    async function sendMessage(message) {
+        if (!message.trim()) return;
+        
+        // Disable input while processing
+        messageInput.disabled = true;
+        sendBtn.disabled = true;
+        
+        // Add user message
+        addUserMessage(message);
+        
+        // Clear input
+        messageInput.value = '';
+        
+        // Show typing indicator
+        addTypingIndicator();
+        
+        try {
+            const response = await fetch('/chatbot/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ message: message })
+            });
+            
+            const data = await response.json();
+            
+            // Remove typing indicator
+            removeTypingIndicator();
+            
+            if (response.ok) {
+                addBotMessage(data.response, data.timestamp);
+            } else {
+                addBotMessage('Sorry, I encountered an error. Please try again.', new Date());
+            }
+        } catch (error) {
+            removeTypingIndicator();
+            addBotMessage('Sorry, I encountered a connection error. Please try again.', new Date());
+            console.error('Chat error:', error);
+        } finally {
+            // Re-enable input
+            messageInput.disabled = false;
+            sendBtn.disabled = false;
+            messageInput.focus();
+        }
+    }
+    
+    // Handle form submission
+    chatForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const message = messageInput.value.trim();
+        if (message) {
+            sendMessage(message);
+        }
+    });
+    
+    // Handle suggestion buttons
+    suggestionBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const question = btn.textContent;
+            messageInput.value = question;
+            sendMessage(question);
+        });
+    });
+    
+    // Handle clear button
+    clearBtn.addEventListener('click', async () => {
+        if (confirm('Are you sure you want to clear the chat history?')) {
+            try {
+                await fetch('/chatbot/clear', { method: 'POST' });
+                
+                // Remove all messages except welcome
+                const messages = chatContainer.querySelectorAll('.user-message, .bot-message:not(:first-child)');
+                messages.forEach(msg => msg.remove());
+                
+            } catch (error) {
+                console.error('Error clearing chat:', error);
+            }
+        }
+    });
+    
+    // Focus input on load
+    messageInput.focus();
+</script>
+{% endblock %}

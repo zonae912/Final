@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}My Profile{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <h2><i class="bi bi-person-circle"></i> My Profile</h2>
+        <div class="card mt-3">
+            <div class="card-body">
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="text" class="form-control" value="{{ user.email }}" disabled>
+                    </div>
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Name</label>
+                        <input type="text" class="form-control" id="name" name="name" value="{{ user.name }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="department" class="form-label">Department</label>
+                        <input type="text" class="form-control" id="department" name="department" value="{{ user.department or '' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Role</label>
+                        <input type="text" class="form-control" value="{{ user.role | title }}" disabled>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Update Profile</button>
+                    <a href="{{ url_for('auth.change_password') }}" class="btn btn-outline-secondary">Change Password</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

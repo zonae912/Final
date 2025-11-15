@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}Write Review - Campus Resource Hub{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-star"></i> Write a Review
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Booking Information -->
+                    <div class="alert alert-info mb-4">
+                        <h5 class="alert-heading"><i class="bi bi-info-circle"></i> Your Booking</h5>
+                        <p class="mb-1"><strong>Resource:</strong> {{ booking.resource.title }}</p>
+                        <p class="mb-1"><strong>Date:</strong> {{ booking.start_time.strftime('%B %d, %Y') }}</p>
+                        <p class="mb-0"><strong>Time:</strong> {{ booking.start_time.strftime('%I:%M %p') }} - {{ booking.end_time.strftime('%I:%M %p') }}</p>
+                    </div>
+
+                    <form method="POST" action="{{ url_for('review.create') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="booking_id" value="{{ booking.booking_id }}">
+                        <input type="hidden" name="resource_id" value="{{ booking.resource.resource_id }}">
+
+                        <!-- Rating -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">
+                                Rating <span class="text-danger">*</span>
+                            </label>
+                            <div class="rating-input">
+                                <input type="radio" name="rating" value="5" id="star5" required>
+                                <label for="star5" title="5 stars">
+                                    <i class="bi bi-star-fill"></i>
+                                </label>
+                                
+                                <input type="radio" name="rating" value="4" id="star4">
+                                <label for="star4" title="4 stars">
+                                    <i class="bi bi-star-fill"></i>
+                                </label>
+                                
+                                <input type="radio" name="rating" value="3" id="star3">
+                                <label for="star3" title="3 stars">
+                                    <i class="bi bi-star-fill"></i>
+                                </label>
+                                
+                                <input type="radio" name="rating" value="2" id="star2">
+                                <label for="star2" title="2 stars">
+                                    <i class="bi bi-star-fill"></i>
+                                </label>
+                                
+                                <input type="radio" name="rating" value="1" id="star1">
+                                <label for="star1" title="1 star">
+                                    <i class="bi bi-star-fill"></i>
+                                </label>
+                            </div>
+                            <div class="form-text mt-2">Click to rate from 1 (poor) to 5 (excellent)</div>
+                        </div>
+
+                        <!-- Comment -->
+                        <div class="mb-4">
+                            <label for="comment" class="form-label fw-bold">
+                                Your Review <span class="text-danger">*</span>
+                            </label>
+                            <textarea class="form-control" id="comment" name="comment" rows="8" 
+                                      required placeholder="Share your experience with this resource..."></textarea>
+                            <div class="form-text">
+                                Help others by describing:
+                                <ul class="small mb-0 mt-1">
+                                    <li>What you used the resource for</li>
+                                    <li>Quality of the facilities/equipment</li>
+                                    <li>Cleanliness and maintenance</li>
+                                    <li>What was good or could be improved</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Review Guidelines -->
+                        <div class="alert alert-warning mb-4">
+                            <h6 class="alert-heading"><i class="bi bi-exclamation-triangle"></i> Review Guidelines</h6>
+                            <ul class="small mb-0">
+                                <li>Be honest and objective</li>
+                                <li>Focus on the resource, not the owner</li>
+                                <li>No offensive language or personal attacks</li>
+                                <li>Reviews can be edited or deleted later</li>
+                                <li>Inappropriate reviews may be removed by administrators</li>
+                            </ul>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-circle"></i> Submit Review
+                                </button>
+                                <a href="{{ url_for('booking.detail', booking_id=booking.booking_id) }}" class="btn btn-secondary">
+                                    Cancel
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.rating-input {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+    font-size: 2.5rem;
+}
+
+.rating-input input[type="radio"] {
+    display: none;
+}
+
+.rating-input label {
+    cursor: pointer;
+    color: #ddd;
+    margin: 0 5px;
+    transition: color 0.2s;
+}
+
+.rating-input label:hover,
+.rating-input label:hover ~ label,
+.rating-input input[type="radio"]:checked ~ label {
+    color: #ffc107;
+}
+
+.rating-input input[type="radio"]:checked ~ label {
+    color: #ffc107;
+}
+</style>
+
+<script>
+// Add visual feedback for rating selection
+document.addEventListener('DOMContentLoaded', function() {
+    const ratingInputs = document.querySelectorAll('.rating-input input[type="radio"]');
+    ratingInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            const rating = this.value;
+            const label = this.nextElementSibling;
+            if (label) {
+                // Add a selected class or animation
+                label.style.transform = 'scale(1.2)';
+                setTimeout(() => {
+                    label.style.transform = 'scale(1)';
+                }, 200);
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

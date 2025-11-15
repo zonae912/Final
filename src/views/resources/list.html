@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+
+{% block title %}Browse Resources - Campus Resource Hub{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="h2">Browse Resources</h1>
+            <p class="text-muted">Discover and book campus resources</p>
+        </div>
+        <div class="col-md-4 text-end">
+            {% if current_user.is_authenticated and current_user.role in ['staff', 'admin'] %}
+            <a href="{{ url_for('resource.create') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Add Resource
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Horizontal Filters Bar -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('resource.list_resources') }}">
+                <div class="row g-3 align-items-end">
+                    <!-- Search Keyword -->
+                    <div class="col-md-3">
+                        <label for="q" class="form-label small fw-bold mb-1">Search</label>
+                        <input type="text" class="form-control" id="q" name="q" 
+                               value="{{ keyword or '' }}" placeholder="Search resources...">
+                    </div>
+
+                    <!-- Category Filter -->
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold mb-1">Category</label>
+                        <select class="form-select" name="category">
+                            <option value="">All</option>
+                            {% for cat in categories %}
+                            <option value="{{ cat }}" {{ 'selected' if cat == selected_category }}>
+                                {{ cat.replace('_', ' ').title() }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Location Filter -->
+                    <div class="col-md-2">
+                        <label for="location" class="form-label small fw-bold mb-1">Location</label>
+                        <input type="text" class="form-control" id="location" name="location" 
+                               value="{{ location or '' }}" placeholder="Location">
+                    </div>
+
+                    <!-- Capacity Filter -->
+                    <div class="col-md-1">
+                        <label for="capacity" class="form-label small fw-bold mb-1">Capacity</label>
+                        <input type="number" class="form-control" id="capacity" name="capacity" 
+                               value="{{ capacity or '' }}" placeholder="Min" min="1">
+                    </div>
+
+                    <!-- Availability Start -->
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold mb-1">Start Date/Time</label>
+                        <div class="row g-1">
+                            <div class="col-7">
+                                <input type="date" class="form-control form-control-sm" id="start_date" name="start_date" 
+                                       value="{{ start_date or '' }}">
+                            </div>
+                            <div class="col-5">
+                                <input type="time" class="form-control form-control-sm" id="start_time" name="start_time" 
+                                       value="{{ start_time or '' }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Availability End -->
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold mb-1">End Date/Time</label>
+                        <div class="row g-1">
+                            <div class="col-7">
+                                <input type="date" class="form-control form-control-sm" id="end_date" name="end_date" 
+                                       value="{{ end_date or '' }}">
+                            </div>
+                            <div class="col-5">
+                                <input type="time" class="form-control form-control-sm" id="end_time" name="end_time" 
+                                       value="{{ end_time or '' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3 align-items-end mt-2">
+                    <!-- Sort By -->
+                    <div class="col-md-2">
+                        <label for="sort" class="form-label small fw-bold mb-1">Sort By</label>
+                        <select class="form-select" name="sort" id="sort">
+                            <option value="recent" {{ 'selected' if sort_by == 'recent' }}>Most Recent</option>
+                            <option value="most_booked" {{ 'selected' if sort_by == 'most_booked' }}>Most Booked</option>
+                            <option value="top_rated" {{ 'selected' if sort_by == 'top_rated' }}>Top Rated</option>
+                            <option value="title" {{ 'selected' if sort_by == 'title' }}>Alphabetical</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-10 text-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-funnel"></i> Apply Filters
+                        </button>
+                        <a href="{{ url_for('resource.list_resources') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Clear Filters
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Resource Grid -->
+    <div class="row">
+        <div class="col-12">
+            <!-- Results Count -->
+            <div class="mb-3">
+                <p class="text-muted">
+                    <strong>{{ resources|length }}</strong> resource{{ 's' if resources|length != 1 }} found
+                </p>
+            </div>
+
+            <!-- Resource Grid -->
+            {% if resources %}
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                {% for resource in resources %}
+                <div class="col">
+                    <div class="card h-100 shadow-sm resource-card">
+                        <!-- Resource Image -->
+                        {% set images = resource.images | from_json %}
+                        {% if images and images|length > 0 %}
+                        <img src="{{ url_for('static', filename=images[0]) }}" 
+                             class="card-img-top" alt="{{ resource.title }}" style="height: 200px; object-fit: cover;">
+                        {% else %}
+                        <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                            <i class="bi bi-image text-muted" style="font-size: 3rem;"></i>
+                        </div>
+                        {% endif %}
+
+                        <div class="card-body d-flex flex-column">
+                            <!-- Title and Category -->
+                            <h5 class="card-title">{{ resource.title }}</h5>
+                            <span class="badge bg-secondary mb-2" style="width: fit-content;">
+                                {{ resource.category.replace('_', ' ').title() }}
+                            </span>
+
+                            <!-- Rating -->
+                            {% set review_count = resource.reviews.count() %}
+                            {% if review_count > 0 %}
+                            <div class="mb-2">
+                                {% set avg_rating = resource.get_average_rating() %}
+                                {% for i in range(5) %}
+                                    {% if i < avg_rating %}
+                                        <i class="bi bi-star-fill text-warning"></i>
+                                    {% else %}
+                                        <i class="bi bi-star text-warning"></i>
+                                    {% endif %}
+                                {% endfor %}
+                                <span class="text-muted small">({{ review_count }})</span>
+                            </div>
+                            {% endif %}
+
+                            <!-- Description -->
+                            <p class="card-text text-muted small">
+                                {{ resource.description[:100] }}{% if resource.description|length > 100 %}...{% endif %}
+                            </p>
+
+                            <!-- Details -->
+                            <div class="mt-auto">
+                                <div class="d-flex justify-content-between text-muted small mb-2">
+                                    <span><i class="bi bi-geo-alt"></i> {{ resource.location }}</span>
+                                    <span><i class="bi bi-people"></i> {{ resource.capacity }}</span>
+                                </div>
+
+                                {% if not resource.approval_required %}
+                                <div class="mb-2">
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-check-circle"></i> Instant Booking
+                                    </span>
+                                </div>
+                                {% endif %}
+
+                                <!-- Actions -->
+                                <div class="d-grid">
+                                    <a href="{{ url_for('resource.detail', resource_id=resource.resource_id) }}" class="btn btn-primary btn-sm">
+                                        View Details
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Pagination -->
+            {% if pagination %}
+            <nav aria-label="Resource pagination" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item {{ 'disabled' if not pagination.has_prev }}">
+                        <a class="page-link" href="{{ url_for('resource.list_resources', page=pagination.prev_num, **request.args) }}">
+                            Previous
+                        </a>
+                    </li>
+                    
+                    {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                        {% if page_num %}
+                            <li class="page-item {{ 'active' if page_num == pagination.page }}">
+                                <a class="page-link" href="{{ url_for('resource.list_resources', page=page_num, **request.args) }}">
+                                    {{ page_num }}
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    <li class="page-item {{ 'disabled' if not pagination.has_next }}">
+                        <a class="page-link" href="{{ url_for('resource.list_resources', page=pagination.next_num, **request.args) }}">
+                            Next
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <!-- No Results -->
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="bi bi-inbox text-muted" style="font-size: 4rem;"></i>
+                    <h4 class="mt-3">No Resources Found</h4>
+                    <p class="text-muted">Try adjusting your filters or search terms.</p>
+                    <a href="{{ url_for('resource.list_resources') }}" class="btn btn-primary">Clear Filters</a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.resource-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.resource-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+</style>
+{% endblock %}
